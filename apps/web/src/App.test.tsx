@@ -79,18 +79,18 @@ describe('authentication flow', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
     expect(
-      await screen.findByRole('heading', { name: 'Your work, Balaji.' }),
+      await screen.findByRole('heading', { name: 'Delivery board' }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('navigation', { name: 'Workspace sections' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute(
       'href',
-      '#projects',
+      '/projects',
     );
     expect(screen.getByRole('link', { name: 'Board' })).toHaveAttribute(
       'href',
-      '#board',
+      '/board',
     );
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/auth/login'),
@@ -125,7 +125,7 @@ describe('authentication flow', () => {
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
 
-    renderApp('/');
+    renderApp('/teams');
 
     await user.type(await screen.findByLabelText('New team'), 'Platform');
     await user.click(screen.getByRole('button', { name: 'Create team' }));
@@ -134,6 +134,9 @@ describe('authentication flow', () => {
       await screen.findByRole('heading', { name: 'Platform' }),
     ).toBeInTheDocument();
     expect(screen.getByText('1 member · admin')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Team workspaces' }),
+    ).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenLastCalledWith(
       expect.stringMatching(/\/teams$/),
       expect.objectContaining({ method: 'POST' }),
@@ -181,7 +184,7 @@ describe('authentication flow', () => {
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
 
-    renderApp('/');
+    renderApp('/projects');
 
     await user.type(
       await screen.findByLabelText('Project name'),
@@ -196,6 +199,9 @@ describe('authentication flow', () => {
     expect(
       await screen.findByRole('button', { name: /Customer portal/ }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Members' }),
+    ).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringMatching(/\/projects$/),
       expect.objectContaining({ method: 'POST' }),
@@ -293,9 +299,11 @@ describe('authentication flow', () => {
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
 
-    renderApp('/');
+    renderApp('/board');
 
     await user.type(await screen.findByLabelText('Task title'), task.title);
+    expect(screen.getByText('Active project')).toBeInTheDocument();
+    expect(screen.queryByLabelText('New team')).not.toBeInTheDocument();
     await user.type(
       screen.getByLabelText('Task description'),
       task.description,

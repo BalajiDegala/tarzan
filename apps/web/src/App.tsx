@@ -13,7 +13,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
 
-  return user === null ? children : <Navigate replace to="/" />;
+  return user === null ? children : <Navigate replace to="/board" />;
 }
 
 export function App() {
@@ -53,15 +53,32 @@ export function App() {
           </PublicOnlyRoute>
         }
       />
+      <Route path="/" element={<Navigate replace to="/board" />} />
       <Route
-        path="/"
+        path="/teams"
         element={
           <ProtectedRoute>
-            <WorkspacePage />
+            <WorkspacePage view="teams" />
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate replace to="/" />} />
+      <Route
+        path="/projects"
+        element={
+          <ProtectedRoute>
+            <WorkspacePage view="projects" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/board"
+        element={
+          <ProtectedRoute>
+            <WorkspacePage view="board" />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate replace to="/board" />} />
     </Routes>
   );
 }

@@ -42,7 +42,7 @@ npm run db:seed
 npm run dev
 ```
 
-Open the web app at `http://localhost:5173`. The API health endpoint is available at `http://localhost:3000/api/health`.
+Open the web app at `http://localhost:5173`. Team management, project management, and task delivery are separated into `/teams`, `/projects`, and `/board`. The API health endpoint is available at `http://localhost:3000/api/health`.
 
 The development command starts both workspaces with watch mode. PostgreSQL data is retained in the `tarzan_postgres_data` Docker volume.
 

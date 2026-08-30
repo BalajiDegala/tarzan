@@ -1,0 +1,97 @@
+nameOverride: ''
+fullnameOverride: ''
+
+imagePullSecrets:
+  - name: harbor-registry
+
+config:
+  nodeEnv: production
+  webOrigin: http://localhost:5173
+  cookieSecure: 'false'
+
+secret:
+  # Recommended: create tarzan-secrets outside Helm with a secret manager.
+  create: false
+  existingSecret: tarzan-secrets
+  postgresPassword: ''
+  databaseUrl: ''
+  jwtSecret: ''
+
+api:
+  replicaCount: 2
+  image:
+    repository: harbor.example.com/tarzan/tarzan-api
+    tag: '0.1.0'
+    pullPolicy: IfNotPresent
+  service:
+    # Must remain api unless docker/nginx.conf is made configurable.
+    name: api
+    type: ClusterIP
+    port: 3000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+web:
+  replicaCount: 2
+  image:
+    repository: harbor.example.com/tarzan/tarzan-web
+    tag: '0.1.0'
+    pullPolicy: IfNotPresent
+  service:
+    name: web
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+postgres:
+  image:
+    repository: postgres
+    tag: 16-alpine
+    pullPolicy: IfNotPresent
+  service:
+    # DATABASE_URL must use the same hostname.
+    name: postgres
+    port: 5432
+  auth:
+    database: tarzan
+    username: tarzan
+  persistence:
+    enabled: true
+    existingClaim: ''
+    storageClassName: ''
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    static:
+      enabled: false
+      storageClassName: tarzan-local
+      hostPath: /var/lib/tarzan/postgres
+      reclaimPolicy: Retain
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: '1'
+      memory: 1Gi
+
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  host: tarzan.example.com
+  path: /
+  pathType: Prefix
+  tls:
+    enabled: false
+    secretName: tarzan-tls

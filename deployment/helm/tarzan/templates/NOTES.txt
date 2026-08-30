@@ -1,0 +1,19 @@
+Tarzan {{ .Chart.AppVersion }} has been installed.
+
+Check the workloads:
+  kubectl -n {{ .Release.Namespace }} get deployments,replicasets,pods,services,pvc
+
+Wait for rollouts:
+  kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ include "tarzan.fullname" . }}-api
+  kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ include "tarzan.fullname" . }}-web
+
+{{- if .Values.ingress.enabled }}
+Open: {{ if .Values.ingress.tls.enabled }}https{{ else }}http{{ end }}://{{ .Values.ingress.host }}
+{{- else }}
+Port-forward the web Service:
+  kubectl -n {{ .Release.Namespace }} port-forward service/{{ .Values.web.service.name }} 5173:{{ .Values.web.service.port }}
+Then open: http://127.0.0.1:5173
+{{- end }}
+
+Run the chart test:
+  helm test {{ .Release.Name }} -n {{ .Release.Namespace }}

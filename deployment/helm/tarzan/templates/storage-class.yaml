@@ -1,0 +1,11 @@
+{{- if and .Values.postgres.persistence.enabled .Values.postgres.persistence.static.enabled }}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .Values.postgres.persistence.static.storageClassName }}
+  labels:
+    {{- include "tarzan.labels" . | nindent 4 }}
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: {{ .Values.postgres.persistence.static.reclaimPolicy }}
+volumeBindingMode: WaitForFirstConsumer
+{{- end }}

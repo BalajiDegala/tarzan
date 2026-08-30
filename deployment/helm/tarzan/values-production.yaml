@@ -1,0 +1,38 @@
+# GitOps-safe production example. Replace every REPLACE_* value.
+config:
+  webOrigin: https://tarzan.example.com
+  cookieSecure: 'true'
+
+secret:
+  create: false
+  existingSecret: tarzan-secrets
+
+imagePullSecrets:
+  - name: harbor-registry
+
+api:
+  replicaCount: 2
+  image:
+    repository: REPLACE_WITH_HARBOR_HOST/tarzan/tarzan-api
+    tag: REPLACE_WITH_IMMUTABLE_GIT_SHA
+
+web:
+  replicaCount: 2
+  image:
+    repository: REPLACE_WITH_HARBOR_HOST/tarzan/tarzan-web
+    tag: REPLACE_WITH_IMMUTABLE_GIT_SHA
+
+postgres:
+  persistence:
+    storageClassName: REPLACE_WITH_CSI_STORAGE_CLASS
+    size: 20Gi
+    static:
+      enabled: false
+
+ingress:
+  enabled: true
+  className: nginx
+  host: tarzan.example.com
+  tls:
+    enabled: true
+    secretName: tarzan-tls

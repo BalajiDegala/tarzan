@@ -1,0 +1,10 @@
+apiVersion: v2
+name: tarzan
+description: Tarzan team task-management application
+type: application
+version: 0.1.0
+appVersion: '0.1.0'
+kubeVersion: '>=1.29.0-0'
+home: https://gitlab.example.com/platform/tarzan
+maintainers:
+  - name: Tarzan Platform Team

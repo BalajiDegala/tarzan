@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
@@ -247,7 +247,10 @@ describe('authentication flow', () => {
       .mockResolvedValueOnce(jsonResponse({ projects: [project] }))
       .mockResolvedValueOnce(jsonResponse({ project }))
       .mockResolvedValueOnce(jsonResponse({ tasks: [] }))
-      .mockResolvedValueOnce(jsonResponse({ task }));
+      .mockResolvedValueOnce(jsonResponse({ task }))
+      .mockResolvedValueOnce(
+        jsonResponse({ task: { ...task, status: 'TODO' } }),
+      );
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
 
@@ -265,10 +268,26 @@ describe('authentication flow', () => {
     await user.type(screen.getByLabelText('Labels'), 'backend');
     await user.click(screen.getByRole('button', { name: 'Create task' }));
 
-    expect(await screen.findAllByText('TASK-100')).toHaveLength(2);
+    const taskCard = await screen.findByRole('button', {
+      name: 'TASK-100 Implement payment API',
+    });
+    expect(screen.getByText('TASK-100')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringMatching(/\/tasks$/),
       expect.objectContaining({ method: 'POST' }),
+    );
+
+    fireEvent.dragStart(taskCard);
+    fireEvent.drop(screen.getByRole('region', { name: 'Todo column' }));
+
+    expect(
+      await within(
+        screen.getByRole('region', { name: 'Todo column' }),
+      ).findByRole('button', { name: 'TASK-100 Implement payment API' }),
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/tasks\/[^/]+\/status$/),
+      expect.objectContaining({ body: JSON.stringify({ status: 'TODO' }) }),
     );
   });
 });

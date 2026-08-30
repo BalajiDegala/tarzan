@@ -10,6 +10,7 @@ import type {
 import { useEffect, useState } from 'react';
 
 import { tasksApi } from '../lib/api';
+import { KanbanBoard } from './KanbanBoard';
 
 const taskTypes: TaskType[] = ['TASK', 'BUG', 'STORY'];
 const taskPriorities: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -69,6 +70,7 @@ export function TaskWorkspace({
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<'BOARD' | 'LIST'>('BOARD');
 
   const isAdmin = project.teamRole === 'ADMIN';
 
@@ -221,6 +223,30 @@ export function TaskWorkspace({
     }
   }
 
+  async function handleBoardMove(taskId: string, status: TaskStatus) {
+    setWorking(true);
+    setError(null);
+
+    try {
+      const { task } = await tasksApi.updateStatus(taskId, status);
+      setTasks((current) =>
+        current.map((item) => (item.id === task.id ? task : item)),
+      );
+      if (selectedTask?.id === task.id) {
+        setSelectedTask(task);
+        populateEditor(task);
+      }
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Unable to move the task.',
+      );
+    } finally {
+      setWorking(false);
+    }
+  }
+
   async function handleAssignee(nextAssigneeId: string) {
     if (selectedTask === null) return;
     setWorking(true);
@@ -271,18 +297,45 @@ export function TaskWorkspace({
       selectedTask.reporter.id === currentUserId ||
       selectedTask.assignee?.id === currentUserId);
 
+  function canMove(task: TaskSummary): boolean {
+    return (
+      task.teamRole === 'ADMIN' ||
+      task.reporter.id === currentUserId ||
+      task.assignee?.id === currentUserId
+    );
+  }
+
   return (
     <section className="mt-7 border-t border-emerald-950/10 pt-7">
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs font-black tracking-[0.14em] text-emerald-700 uppercase">
-            Task list
+            Project workflow
           </p>
           <h3 className="mt-1 text-xl font-black">{project.name} work</h3>
         </div>
-        <span className="rounded-full bg-emerald-950/5 px-3 py-1 text-xs font-black text-emerald-800">
-          {tasks.length}
-        </span>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-xl bg-emerald-950/5 p-1">
+            {(['BOARD', 'LIST'] as const).map((option) => (
+              <button
+                aria-pressed={view === option}
+                className={`rounded-lg px-3 py-1.5 text-xs font-black transition ${
+                  view === option
+                    ? 'bg-white text-emerald-900 shadow-sm'
+                    : 'text-emerald-950/45'
+                }`}
+                key={option}
+                onClick={() => setView(option)}
+                type="button"
+              >
+                {option === 'BOARD' ? 'Board' : 'List'}
+              </button>
+            ))}
+          </div>
+          <span className="rounded-full bg-emerald-950/5 px-3 py-1 text-xs font-black text-emerald-800">
+            {tasks.length}
+          </span>
+        </div>
       </div>
 
       {error === null ? null : (
@@ -376,13 +429,28 @@ export function TaskWorkspace({
         </button>
       </form>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+      <div
+        className={
+          view === 'LIST'
+            ? 'grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]'
+            : 'space-y-4'
+        }
+      >
         {loading ? (
           <p className="text-sm text-emerald-950/50">Loading tasks…</p>
         ) : tasks.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-emerald-950/15 px-5 py-8 text-center text-sm text-emerald-950/50">
             No tasks in this project yet.
           </div>
+        ) : view === 'BOARD' ? (
+          <KanbanBoard
+            canMove={canMove}
+            onMove={handleBoardMove}
+            onSelect={handleSelect}
+            selectedTaskId={selectedTask?.id ?? null}
+            tasks={tasks}
+            working={working}
+          />
         ) : (
           <ul className="space-y-2">
             {tasks.map((task) => (

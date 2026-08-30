@@ -101,6 +101,7 @@ export interface TaskSummary {
   priority: TaskPriority;
   projectId: string;
   projectName: string;
+  reporter: TaskUser;
   status: TaskStatus;
   taskKey: string;
   teamRole: TeamRole;
@@ -112,7 +113,6 @@ export interface TaskSummary {
 export interface TaskDetails extends TaskSummary {
   description: string | null;
   labels: string[];
-  reporter: TaskUser;
 }
 
 export interface TaskListResponse {

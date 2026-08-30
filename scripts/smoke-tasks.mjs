@@ -183,6 +183,11 @@ for (const status of ['TODO', 'IN_PROGRESS', 'BLOCKED', 'IN_REVIEW', 'DONE']) {
   report(`WORKFLOW_${status}`, statusResult.body.task.status, status);
 }
 
+const persistedStatus = await requestJson(`/tasks/${memberTask.id}`, {
+  headers: { Cookie: member.cookie },
+});
+report('KANBAN_STATUS_PERSISTED', persistedStatus.body.task.status, 'DONE');
+
 const memberList = await requestJson(`/tasks?projectId=${project.id}`, {
   headers: { Cookie: member.cookie },
 });

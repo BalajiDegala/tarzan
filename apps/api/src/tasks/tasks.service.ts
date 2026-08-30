@@ -317,6 +317,7 @@ export class TasksService {
       priority: task.priority as SharedTaskPriority,
       projectId: task.projectId,
       projectName: task.project.name,
+      reporter: task.reporter,
       status: task.status as SharedTaskStatus,
       taskKey: task.taskKey,
       teamRole: this.taskRole(task) as SharedTeamRole,

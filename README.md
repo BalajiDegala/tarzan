@@ -1,6 +1,6 @@
 # Tarzan
 
-Tarzan is a simple, fast team work-management platform. This repository currently implements **M0 (Foundation)** through **M4 (Tasks)** from the product specification in `docs/`.
+Tarzan is a simple, fast team work-management platform. This repository currently implements **M0 (Foundation)** through **M5 (Kanban)** from the product specification in `docs/`.
 
 ## What is included
 
@@ -14,10 +14,11 @@ Tarzan is a simple, fast team work-management platform. This repository currentl
 - Team member listing, role assignment, removal, and authorization boundaries
 - Team-scoped project creation, listing, detail views, and editing
 - Task CRUD with generated keys, assignment, fixed workflow status, type, priority, due dates, and labels
+- Six-column Kanban board with drag-and-drop status persistence and a list-view fallback
 - Docker Compose services for PostgreSQL, the API, and the web app
 - ESLint, Prettier, Vitest, type checking, and production builds
 
-Kanban, collaboration, search, and later product milestones have not been implemented yet.
+Collaboration, search, and later product milestones have not been implemented yet.
 
 ## Prerequisites
 
@@ -123,6 +124,8 @@ Pass `teamId` as an optional query parameter to filter the project list. Every t
 | `PATCH`  | `/api/tasks/:id/assignee` | Assign a team member as a team admin       |
 
 Pass `projectId` as an optional query parameter to scope the task list. Task keys are generated atomically by PostgreSQL in the `TASK-100` format. All team members can create tasks. Team admins can update, assign, move, and delete any team task; regular members can update or move tasks they reported or are assigned to. Only members of the owning team can be assigned.
+
+The project workspace opens in Kanban view with Backlog, Todo, In Progress, Blocked, In Review, and Done columns. Permitted users can drag task cards between columns, and each drop persists through the task status endpoint. The existing list and task-detail views remain available from the same workspace.
 
 ## Database workflow
 

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tarzan-config
+  namespace: tarzan
+  labels:
+    app.kubernetes.io/part-of: tarzan
+data:
+  NODE_ENV: production
+  PORT: '3000'
+  POSTGRES_DB: tarzan
+  POSTGRES_USER: tarzan
+  WEB_ORIGIN: http://tarzan.example.com
+  COOKIE_SECURE: 'false'

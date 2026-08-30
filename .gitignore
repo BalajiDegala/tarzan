@@ -11,3 +11,5 @@ coverage/
 .vscode/
 generated/
 prisma/dev.db
+deployment/**/secret.yaml
+deployment/**/*-secrets.yaml

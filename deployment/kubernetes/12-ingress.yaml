@@ -1,0 +1,22 @@
+# Requires an installed Ingress controller named nginx.
+# For production, change the host, enable TLS, and set COOKIE_SECURE=true.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tarzan
+  namespace: tarzan
+  labels:
+    app.kubernetes.io/part-of: tarzan
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: tarzan.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  name: http

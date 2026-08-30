@@ -1,0 +1,20 @@
+# hostPath is intentionally used to demonstrate a static PV on one Linux node.
+# It is not suitable for a multi-node or highly available production database.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: tarzan-postgres-pv
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: tarzan
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: tarzan-local
+  volumeMode: Filesystem
+  hostPath:
+    path: /var/lib/tarzan/postgres
+    type: DirectoryOrCreate

@@ -1,0 +1,11 @@
+# Single-node Linux learning cluster only.
+# Production clusters should use their CSI driver's dynamic StorageClass instead.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: tarzan-local
+  labels:
+    app.kubernetes.io/part-of: tarzan
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer

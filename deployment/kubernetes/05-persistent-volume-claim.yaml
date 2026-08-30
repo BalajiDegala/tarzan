@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: tarzan
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: tarzan
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: tarzan-local
+  resources:
+    requests:
+      storage: 10Gi

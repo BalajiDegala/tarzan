@@ -1,0 +1,46 @@
+{
+  "name": "tarzan",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Tarzan team task-management platform",
+  "license": "UNLICENSED",
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=10.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build:packages && npm run build:apps",
+    "build:apps": "npm run build --workspace @tarzan/api && npm run build --workspace @tarzan/web",
+    "build:packages": "npm run build --workspace @tarzan/types && npm run build --workspace @tarzan/config",
+    "dev": "concurrently --kill-others-on-fail --names API,WEB --prefix-colors cyan,magenta \"npm run dev --workspace @tarzan/api\" \"npm run dev --workspace @tarzan/web\"",
+    "predev": "npm run build:packages",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "prisma:format": "prisma format --schema prisma/schema.prisma",
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "prisma:migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
+    "smoke:auth": "node scripts/smoke-auth.mjs",
+    "test": "npm run build:packages && npm run test --workspaces --if-present",
+    "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^10.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^17.3.0",
+    "prettier": "^3.6.2",
+    "prisma": "6.12.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.41.0"
+  }
+}

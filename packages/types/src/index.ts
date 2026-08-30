@@ -56,3 +56,29 @@ export interface TeamResponse {
 export interface TeamMemberResponse {
   member: TeamMemberDetails;
 }
+
+export interface ProjectSummary {
+  createdAt: string;
+  description: string | null;
+  id: string;
+  name: string;
+  teamId: string;
+  teamName: string;
+  teamRole: TeamRole;
+  updatedAt: string;
+}
+
+export interface ProjectDetails extends ProjectSummary {
+  createdBy: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface ProjectListResponse {
+  projects: ProjectSummary[];
+}
+
+export interface ProjectResponse {
+  project: ProjectDetails;
+}

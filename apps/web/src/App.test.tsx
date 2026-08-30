@@ -128,4 +128,65 @@ describe('authentication flow', () => {
       expect.objectContaining({ method: 'POST' }),
     );
   });
+
+  it('creates a project inside an administered team', async () => {
+    const team = {
+      createdAt: '2026-08-30T08:20:00.000Z',
+      createdBy: { id: authenticatedUser.id, name: authenticatedUser.name },
+      id: '3cb79f02-b617-4f61-ac60-a56ee4998b53',
+      memberCount: 1,
+      members: [
+        {
+          email: authenticatedUser.email,
+          joinedAt: '2026-08-30T08:20:00.000Z',
+          name: authenticatedUser.name,
+          role: 'ADMIN',
+          userId: authenticatedUser.id,
+        },
+      ],
+      name: 'Platform',
+      role: 'ADMIN',
+      updatedAt: '2026-08-30T08:20:00.000Z',
+    };
+    const project = {
+      createdAt: '2026-08-30T09:30:00.000Z',
+      createdBy: { id: authenticatedUser.id, name: authenticatedUser.name },
+      description: 'Customer-facing project',
+      id: '78027a0c-c1ef-4633-900c-f797e3376673',
+      name: 'Customer portal',
+      teamId: team.id,
+      teamName: team.name,
+      teamRole: 'ADMIN',
+      updatedAt: '2026-08-30T09:30:00.000Z',
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ user: authenticatedUser }))
+      .mockResolvedValueOnce(jsonResponse({ teams: [team] }))
+      .mockResolvedValueOnce(jsonResponse({ team }))
+      .mockResolvedValueOnce(jsonResponse({ projects: [] }))
+      .mockResolvedValueOnce(jsonResponse({ project }));
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+
+    renderApp('/');
+
+    await user.type(
+      await screen.findByLabelText('Project name'),
+      'Customer portal',
+    );
+    await user.type(
+      screen.getByLabelText('Description'),
+      'Customer-facing project',
+    );
+    await user.click(screen.getByRole('button', { name: 'Create project' }));
+
+    expect(
+      await screen.findByRole('button', { name: /Customer portal/ }),
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      expect.stringMatching(/\/projects$/),
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
 });

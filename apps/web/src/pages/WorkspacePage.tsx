@@ -1,9 +1,15 @@
-import type { TeamDetails, TeamRole, TeamSummary } from '@tarzan/types';
+import type {
+  ProjectDetails,
+  ProjectSummary,
+  TeamDetails,
+  TeamRole,
+  TeamSummary,
+} from '@tarzan/types';
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '../auth/AuthContext';
 import { Brand } from '../components/Brand';
-import { teamsApi } from '../lib/api';
+import { projectsApi, teamsApi } from '../lib/api';
 
 function asSummary(team: TeamDetails): TeamSummary {
   return {
@@ -20,7 +26,15 @@ export function WorkspacePage() {
   const { logout, user } = useAuth();
   const [teams, setTeams] = useState<TeamSummary[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<TeamDetails | null>(null);
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const [selectedProject, setSelectedProject] = useState<ProjectDetails | null>(
+    null,
+  );
   const [teamName, setTeamName] = useState('');
+  const [projectName, setProjectName] = useState('');
+  const [projectDescription, setProjectDescription] = useState('');
+  const [editProjectName, setEditProjectName] = useState('');
+  const [editProjectDescription, setEditProjectDescription] = useState('');
   const [memberEmail, setMemberEmail] = useState('');
   const [memberRole, setMemberRole] = useState<TeamRole>('MEMBER');
   const [loading, setLoading] = useState(true);
@@ -45,6 +59,10 @@ export function WorkspacePage() {
           const { team } = await teamsApi.get(firstTeam.id);
           if (active) {
             setSelectedTeam(team);
+            const projectResponse = await projectsApi.list(team.id);
+            if (active) {
+              setProjects(projectResponse.projects);
+            }
           }
         }
       })
@@ -86,6 +104,8 @@ export function WorkspacePage() {
       const { team } = await teamsApi.create({ name: teamName });
       setTeams((current) => [asSummary(team), ...current]);
       setSelectedTeam(team);
+      setProjects([]);
+      setSelectedProject(null);
       setTeamName('');
     } catch (caughtError) {
       setError(
@@ -104,7 +124,10 @@ export function WorkspacePage() {
 
     try {
       const { team } = await teamsApi.get(teamId);
+      const { projects: teamProjects } = await projectsApi.list(teamId);
       setSelectedTeam(team);
+      setProjects(teamProjects);
+      setSelectedProject(null);
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
@@ -189,6 +212,89 @@ export function WorkspacePage() {
     }
   }
 
+  async function handleCreateProject(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (selectedTeam === null) {
+      return;
+    }
+
+    setWorking(true);
+    setError(null);
+
+    try {
+      const { project } = await projectsApi.create({
+        description: projectDescription,
+        name: projectName,
+        teamId: selectedTeam.id,
+      });
+      setProjects((current) => [project, ...current]);
+      setSelectedProject(project);
+      setEditProjectName(project.name);
+      setEditProjectDescription(project.description ?? '');
+      setProjectName('');
+      setProjectDescription('');
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Unable to create the project.',
+      );
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function handleSelectProject(projectId: string) {
+    setWorking(true);
+    setError(null);
+
+    try {
+      const { project } = await projectsApi.get(projectId);
+      setSelectedProject(project);
+      setEditProjectName(project.name);
+      setEditProjectDescription(project.description ?? '');
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Unable to load the project.',
+      );
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function handleUpdateProject(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (selectedProject === null) {
+      return;
+    }
+
+    setWorking(true);
+    setError(null);
+
+    try {
+      const { project } = await projectsApi.update(selectedProject.id, {
+        description: editProjectDescription,
+        name: editProjectName,
+      });
+      setSelectedProject(project);
+      setProjects((current) =>
+        current.map((item) => (item.id === project.id ? project : item)),
+      );
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Unable to update the project.',
+      );
+    } finally {
+      setWorking(false);
+    }
+  }
+
   const firstName = user.name.split(' ')[0] || user.name;
   const initials = user.name
     .split(' ')
@@ -236,8 +342,7 @@ export function WorkspacePage() {
             Welcome, {firstName}.
           </h1>
           <p className="mt-3 text-lg text-emerald-950/60">
-            Create a team, add registered members, and decide who can administer
-            it.
+            Build teams, organize projects, and keep ownership clear.
           </p>
         </div>
 
@@ -330,12 +435,25 @@ export function WorkspacePage() {
           </aside>
 
           <TeamPanel
+            editProjectDescription={editProjectDescription}
+            editProjectName={editProjectName}
             memberEmail={memberEmail}
             memberRole={memberRole}
             onAddMember={handleAddMember}
+            onCreateProject={handleCreateProject}
             onEmailChange={setMemberEmail}
+            onEditProjectDescriptionChange={setEditProjectDescription}
+            onEditProjectNameChange={setEditProjectName}
             onRemoveMember={handleRemoveMember}
             onRoleChange={setMemberRole}
+            onSelectProject={handleSelectProject}
+            onUpdateProject={handleUpdateProject}
+            projectDescription={projectDescription}
+            projectName={projectName}
+            projects={projects}
+            selectedProject={selectedProject}
+            onProjectDescriptionChange={setProjectDescription}
+            onProjectNameChange={setProjectName}
             team={selectedTeam}
             working={working}
           />
@@ -346,23 +464,49 @@ export function WorkspacePage() {
 }
 
 interface TeamPanelProps {
+  editProjectDescription: string;
+  editProjectName: string;
   memberEmail: string;
   memberRole: TeamRole;
   onAddMember(event: React.FormEvent<HTMLFormElement>): Promise<void>;
+  onCreateProject(event: React.FormEvent<HTMLFormElement>): Promise<void>;
   onEmailChange(value: string): void;
+  onEditProjectDescriptionChange(value: string): void;
+  onEditProjectNameChange(value: string): void;
+  onProjectDescriptionChange(value: string): void;
+  onProjectNameChange(value: string): void;
   onRemoveMember(userId: string): Promise<void>;
   onRoleChange(value: TeamRole): void;
+  onSelectProject(projectId: string): Promise<void>;
+  onUpdateProject(event: React.FormEvent<HTMLFormElement>): Promise<void>;
+  projectDescription: string;
+  projectName: string;
+  projects: ProjectSummary[];
+  selectedProject: ProjectDetails | null;
   team: TeamDetails | null;
   working: boolean;
 }
 
 function TeamPanel({
+  editProjectDescription,
+  editProjectName,
   memberEmail,
   memberRole,
   onAddMember,
+  onCreateProject,
   onEmailChange,
+  onEditProjectDescriptionChange,
+  onEditProjectNameChange,
+  onProjectDescriptionChange,
+  onProjectNameChange,
   onRemoveMember,
   onRoleChange,
+  onSelectProject,
+  onUpdateProject,
+  projectDescription,
+  projectName,
+  projects,
+  selectedProject,
   team,
   working,
 }: TeamPanelProps) {
@@ -409,6 +553,156 @@ function TeamPanel({
             Team
           </span>
         </div>
+      </div>
+
+      <div className="border-b border-emerald-950/10 px-7 py-7 sm:px-9">
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-black tracking-[0.14em] text-emerald-700 uppercase">
+              Projects
+            </p>
+            <h3 className="mt-1 text-xl font-black">Team workspaces</h3>
+          </div>
+          <span className="rounded-full bg-emerald-950/5 px-3 py-1 text-xs font-black text-emerald-800">
+            {projects.length}
+          </span>
+        </div>
+
+        {isAdmin ? (
+          <form
+            className="mb-6 grid gap-3 rounded-2xl bg-lime-50/70 p-4 sm:grid-cols-2"
+            onSubmit={(event) => void onCreateProject(event)}
+          >
+            <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
+              Project name
+              <input
+                className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-4 py-3 text-sm font-medium normal-case outline-none focus:border-emerald-700"
+                maxLength={100}
+                minLength={2}
+                onChange={(event) => onProjectNameChange(event.target.value)}
+                placeholder="e.g. Customer portal"
+                required
+                value={projectName}
+              />
+            </label>
+            <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
+              Description
+              <input
+                className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-4 py-3 text-sm font-medium normal-case outline-none focus:border-emerald-700"
+                maxLength={5000}
+                onChange={(event) =>
+                  onProjectDescriptionChange(event.target.value)
+                }
+                placeholder="What is this project for?"
+                value={projectDescription}
+              />
+            </label>
+            <button
+              className="rounded-xl bg-emerald-900 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-800 disabled:opacity-60 sm:col-span-2"
+              disabled={working}
+              type="submit"
+            >
+              Create project
+            </button>
+          </form>
+        ) : (
+          <p className="mb-5 text-sm text-emerald-950/50">
+            Projects are view only for team members.
+          </p>
+        )}
+
+        {projects.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-emerald-950/15 px-5 py-8 text-center text-sm text-emerald-950/50">
+            No projects in this team yet.
+          </div>
+        ) : (
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+            <ul className="space-y-2">
+              {projects.map((project) => (
+                <li key={project.id}>
+                  <button
+                    className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+                      selectedProject?.id === project.id
+                        ? 'border-emerald-800 bg-emerald-50'
+                        : 'border-emerald-950/10 hover:bg-emerald-950/[0.025]'
+                    }`}
+                    disabled={working}
+                    onClick={() => void onSelectProject(project.id)}
+                    type="button"
+                  >
+                    <span className="block text-sm font-black">
+                      {project.name}
+                    </span>
+                    <span className="mt-1 block truncate text-xs text-emerald-950/45">
+                      {project.description ?? 'No description'}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            {selectedProject === null ? (
+              <div className="grid min-h-36 place-items-center rounded-2xl bg-emerald-950/[0.025] p-5 text-center text-sm text-emerald-950/45">
+                Select a project to see its details.
+              </div>
+            ) : isAdmin ? (
+              <form
+                className="rounded-2xl border border-emerald-950/10 p-4"
+                onSubmit={(event) => void onUpdateProject(event)}
+              >
+                <p className="mb-4 text-xs font-semibold text-emerald-950/45">
+                  Created by {selectedProject.createdBy.name}
+                </p>
+                <label className="block text-xs font-black tracking-wide text-emerald-900 uppercase">
+                  Project name
+                  <input
+                    className="mt-2 w-full rounded-xl border border-emerald-950/10 px-4 py-3 text-sm font-medium normal-case outline-none focus:border-emerald-700"
+                    maxLength={100}
+                    minLength={2}
+                    onChange={(event) =>
+                      onEditProjectNameChange(event.target.value)
+                    }
+                    required
+                    value={editProjectName}
+                  />
+                </label>
+                <label className="mt-3 block text-xs font-black tracking-wide text-emerald-900 uppercase">
+                  Description
+                  <textarea
+                    className="mt-2 min-h-24 w-full resize-y rounded-xl border border-emerald-950/10 px-4 py-3 text-sm font-medium normal-case outline-none focus:border-emerald-700"
+                    maxLength={5000}
+                    onChange={(event) =>
+                      onEditProjectDescriptionChange(event.target.value)
+                    }
+                    value={editProjectDescription}
+                  />
+                </label>
+                <button
+                  className="mt-3 w-full rounded-xl bg-emerald-900 px-5 py-3 text-sm font-black text-white disabled:opacity-60"
+                  disabled={working}
+                  type="submit"
+                >
+                  Save project
+                </button>
+              </form>
+            ) : (
+              <article className="rounded-2xl border border-emerald-950/10 p-5">
+                <p className="text-xs font-black tracking-wide text-emerald-700 uppercase">
+                  Project details
+                </p>
+                <h4 className="mt-2 text-xl font-black">
+                  {selectedProject.name}
+                </h4>
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-emerald-950/60">
+                  {selectedProject.description ?? 'No description provided.'}
+                </p>
+                <p className="mt-5 text-xs text-emerald-950/45">
+                  Created by {selectedProject.createdBy.name}
+                </p>
+              </article>
+            )}
+          </div>
+        )}
       </div>
 
       {isAdmin ? (

@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { validateEnvironment } from './config/environment';
 import { PrismaModule } from './prisma/prisma.module';
+import { ProjectsModule } from './projects/projects.module';
 import { TeamsModule } from './teams/teams.module';
 
 @Module({
@@ -18,6 +19,7 @@ import { TeamsModule } from './teams/teams.module';
     PrismaModule,
     AuthModule,
     TeamsModule,
+    ProjectsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,6 +1,6 @@
 # Tarzan
 
-Tarzan is a simple, fast team work-management platform. This repository currently implements **M0 (Foundation)**, **M1 (Authentication)**, and **M2 (Teams)** from the product specification in `docs/`.
+Tarzan is a simple, fast team work-management platform. This repository currently implements **M0 (Foundation)** through **M3 (Projects)** from the product specification in `docs/`.
 
 ## What is included
 
@@ -12,10 +12,11 @@ Tarzan is a simple, fast team work-management platform. This repository currentl
 - Bcrypt password hashing and JWT authentication in HttpOnly SameSite cookies
 - Team creation with automatic creator-admin membership
 - Team member listing, role assignment, removal, and authorization boundaries
+- Team-scoped project creation, listing, detail views, and editing
 - Docker Compose services for PostgreSQL, the API, and the web app
 - ESLint, Prettier, Vitest, type checking, and production builds
 
-Projects, tasks, and later product milestones have not been implemented yet.
+Tasks and later product milestones have not been implemented yet.
 
 ## Prerequisites
 
@@ -66,11 +67,12 @@ npm run build
 docker compose config --quiet
 npm run smoke:auth
 npm run smoke:teams
+npm run smoke:projects
 ```
 
 To apply formatting, run `npm run format`.
 
-Run the smoke commands while the complete Docker stack is running. They create unique development-only accounts and verify the real authentication and team-management lifecycles through Nginx, the API, and PostgreSQL.
+Run the smoke commands while the complete Docker stack is running. They create unique development-only accounts and verify the real authentication, team, and project lifecycles through Nginx, the API, and PostgreSQL.
 
 ## Authentication API
 
@@ -95,9 +97,20 @@ The browser session uses a 24-hour JWT stored in an HttpOnly, SameSite=Lax cooki
 
 Team creators become admins automatically. Only team admins can add or remove members, non-members cannot read team data, and the final team admin cannot be removed.
 
+## Projects API
+
+| Method  | Endpoint            | Purpose                                    |
+| ------- | ------------------- | ------------------------------------------ |
+| `POST`  | `/api/projects`     | Create a project in an administered team   |
+| `GET`   | `/api/projects`     | List the current user's visible projects   |
+| `GET`   | `/api/projects/:id` | Get a visible project's details            |
+| `PATCH` | `/api/projects/:id` | Update a project as one of its team admins |
+
+Pass `teamId` as an optional query parameter to filter the project list. Every team member can list and view that team's projects; only team admins can create or edit them. Projects are deleted automatically if their owning team is deleted.
+
 ## Database workflow
 
-M1 introduces the `User` model, and M2 adds `Team` and `TeamMember`. The API container automatically runs all checked-in migrations with `prisma migrate deploy` before it starts.
+M1 introduces the `User` model, M2 adds `Team` and `TeamMember`, and M3 adds `Project`. The API container automatically runs all checked-in migrations with `prisma migrate deploy` before it starts.
 
 After a future schema change:
 
@@ -148,4 +161,5 @@ docs/        Product requirements and technical specification
 - Self-registered users start with the global `MEMBER` role. Team administration is scoped independently through each membership.
 - Authentication cookies last 24 hours and are invalidated server-side on logout.
 - Team membership requires an existing registered account; invitations and email notifications remain outside the MVP.
+- Project write access follows the owning team's admin role; regular team members have read-only project access.
 - Product database models continue to be introduced by their owning milestones, avoiding premature migrations.

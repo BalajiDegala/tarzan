@@ -1,5 +1,7 @@
 import type {
   AuthSession,
+  ProjectListResponse,
+  ProjectResponse,
   TeamListResponse,
   TeamMemberResponse,
   TeamResponse,
@@ -95,4 +97,25 @@ export const teamsApi = {
       `/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(userId)}`,
       { method: 'DELETE' },
     ),
+};
+
+export const projectsApi = {
+  create: (input: { description?: string; name: string; teamId: string }) =>
+    request<ProjectResponse>('/projects', {
+      body: JSON.stringify(input),
+      method: 'POST',
+    }),
+  get: (projectId: string) =>
+    request<ProjectResponse>(`/projects/${encodeURIComponent(projectId)}`),
+  list: (teamId?: string) =>
+    request<ProjectListResponse>(
+      `/projects${
+        teamId === undefined ? '' : `?teamId=${encodeURIComponent(teamId)}`
+      }`,
+    ),
+  update: (projectId: string, input: { description?: string; name?: string }) =>
+    request<ProjectResponse>(`/projects/${encodeURIComponent(projectId)}`, {
+      body: JSON.stringify(input),
+      method: 'PATCH',
+    }),
 };

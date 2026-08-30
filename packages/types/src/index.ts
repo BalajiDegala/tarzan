@@ -122,3 +122,34 @@ export interface TaskListResponse {
 export interface TaskResponse {
   task: TaskDetails;
 }
+
+export interface TaskComment {
+  author: TaskUser;
+  content: string;
+  createdAt: string;
+  id: string;
+  updatedAt: string;
+}
+
+export interface CommentListResponse {
+  comments: TaskComment[];
+}
+
+export interface CommentResponse {
+  comment: TaskComment;
+}
+
+export type ActivityAction =
+  'TASK_CREATED' | 'TASK_UPDATED' | 'STATUS_CHANGED' | 'ASSIGNEE_CHANGED';
+
+export interface TaskActivity {
+  action: ActivityAction;
+  actor: TaskUser;
+  createdAt: string;
+  id: string;
+  metadata: Record<string, unknown>;
+}
+
+export interface ActivityListResponse {
+  activities: TaskActivity[];
+}

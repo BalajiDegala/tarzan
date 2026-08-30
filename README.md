@@ -1,6 +1,6 @@
 # Tarzan
 
-Tarzan is a simple, fast team work-management platform. This repository currently implements **M0 (Foundation)** through **M5 (Kanban)** from the product specification in `docs/`.
+Tarzan is a simple, fast team work-management platform. This repository currently implements **M0 (Foundation)** through **M6 (Collaboration)** from the product specification in `docs/`.
 
 ## What is included
 
@@ -15,10 +15,11 @@ Tarzan is a simple, fast team work-management platform. This repository currentl
 - Team-scoped project creation, listing, detail views, and editing
 - Task CRUD with generated keys, assignment, fixed workflow status, type, priority, due dates, and labels
 - Six-column Kanban board with drag-and-drop status persistence and a list-view fallback
+- Team-scoped task comments and structured activity history
 - Docker Compose services for PostgreSQL, the API, and the web app
 - ESLint, Prettier, Vitest, type checking, and production builds
 
-Collaboration, search, and later product milestones have not been implemented yet.
+Search, filters, and later product milestones have not been implemented yet.
 
 ## Prerequisites
 
@@ -71,11 +72,12 @@ npm run smoke:auth
 npm run smoke:teams
 npm run smoke:projects
 npm run smoke:tasks
+npm run smoke:collaboration
 ```
 
 To apply formatting, run `npm run format`.
 
-Run the smoke commands while the complete Docker stack is running. They create unique development-only accounts and verify the real authentication, team, and project lifecycles through Nginx, the API, and PostgreSQL.
+Run the smoke commands while the complete Docker stack is running. They create unique development-only accounts and verify the real authentication, team, project, task, and collaboration lifecycles through Nginx, the API, and PostgreSQL.
 
 ## Authentication API
 
@@ -127,9 +129,19 @@ Pass `projectId` as an optional query parameter to scope the task list. Task key
 
 The project workspace opens in Kanban view with Backlog, Todo, In Progress, Blocked, In Review, and Done columns. Permitted users can drag task cards between columns, and each drop persists through the task status endpoint. The existing list and task-detail views remain available from the same workspace.
 
+## Collaboration API
+
+| Method | Endpoint                  | Purpose                                  |
+| ------ | ------------------------- | ---------------------------------------- |
+| `POST` | `/api/tasks/:id/comments` | Add a comment as a project team member   |
+| `GET`  | `/api/tasks/:id/comments` | List a visible task's comments           |
+| `GET`  | `/api/tasks/:id/activity` | List a visible task's important activity |
+
+Comments include their author and timestamps. Task creation, field edits, workflow moves, and assignee changes create structured activity records. Task and activity writes share a database transaction, and collaboration data remains hidden from users outside the owning team.
+
 ## Database workflow
 
-M1 introduces the `User` model, M2 adds `Team` and `TeamMember`, M3 adds `Project`, and M4 adds `Task` plus its fixed enums and key sequence. The API container automatically runs all checked-in migrations with `prisma migrate deploy` before it starts.
+M1 introduces the `User` model, M2 adds `Team` and `TeamMember`, M3 adds `Project`, M4 adds `Task` plus its fixed enums and key sequence, and M6 adds `Comment` and `Activity`. The API container automatically runs all checked-in migrations with `prisma migrate deploy` before it starts.
 
 After a future schema change:
 
@@ -182,5 +194,5 @@ docs/        Product requirements and technical specification
 - Team membership requires an existing registered account; invitations and email notifications remain outside the MVP.
 - Project write access follows the owning team's admin role; regular team members have read-only project access.
 - Regular members may update tasks they reported or are assigned to; team admins retain full task management access.
-- Task status and assignee activity records are introduced with M6, the collaboration milestone.
+- Task creation, field edits, status changes, and assignment changes are retained as structured activity history.
 - Product database models continue to be introduced by their owning milestones, avoiding premature migrations.

@@ -239,6 +239,27 @@ describe('authentication flow', () => {
       type: 'TASK',
       updatedAt: '2026-08-30T10:00:00.000Z',
     };
+    const comment = {
+      author: { id: authenticatedUser.id, name: authenticatedUser.name },
+      content: 'Ready for review.',
+      createdAt: '2026-08-30T10:05:00.000Z',
+      id: 'ef9eb80d-8dd1-4f0f-b4eb-bcbfd2f9f204',
+      updatedAt: '2026-08-30T10:05:00.000Z',
+    };
+    const createdActivity = {
+      action: 'TASK_CREATED',
+      actor: { id: authenticatedUser.id, name: authenticatedUser.name },
+      createdAt: task.createdAt,
+      id: 'c22168c8-4ea1-4c3b-be20-94e5524aeb0f',
+      metadata: { title: task.title },
+    };
+    const statusActivity = {
+      action: 'STATUS_CHANGED',
+      actor: { id: authenticatedUser.id, name: authenticatedUser.name },
+      createdAt: '2026-08-30T10:06:00.000Z',
+      id: '6fb0ff0f-041d-41d7-b814-a61541081515',
+      metadata: { from: 'BACKLOG', to: 'TODO' },
+    };
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse({ user: authenticatedUser }))
@@ -248,8 +269,15 @@ describe('authentication flow', () => {
       .mockResolvedValueOnce(jsonResponse({ project }))
       .mockResolvedValueOnce(jsonResponse({ tasks: [] }))
       .mockResolvedValueOnce(jsonResponse({ task }))
+      .mockResolvedValueOnce(jsonResponse({ comments: [] }))
+      .mockResolvedValueOnce(jsonResponse({ activities: [createdActivity] }))
+      .mockResolvedValueOnce(jsonResponse({ comment }))
       .mockResolvedValueOnce(
         jsonResponse({ task: { ...task, status: 'TODO' } }),
+      )
+      .mockResolvedValueOnce(jsonResponse({ comments: [comment] }))
+      .mockResolvedValueOnce(
+        jsonResponse({ activities: [statusActivity, createdActivity] }),
       );
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
@@ -274,6 +302,17 @@ describe('authentication flow', () => {
     expect(screen.getByText('TASK-100')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringMatching(/\/tasks$/),
+      expect.objectContaining({ method: 'POST' }),
+    );
+
+    expect(
+      await screen.findByText('Balaji Ravi created this task'),
+    ).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Add comment'), comment.content);
+    await user.click(screen.getByRole('button', { name: 'Post comment' }));
+    expect(await screen.findByText(comment.content)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/tasks\/[^/]+\/comments$/),
       expect.objectContaining({ method: 'POST' }),
     );
 

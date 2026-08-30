@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 
 import { tasksApi } from '../lib/api';
 import { KanbanBoard } from './KanbanBoard';
+import { TaskCollaboration } from './TaskCollaboration';
 
 const taskTypes: TaskType[] = ['TASK', 'BUG', 'STORY'];
 const taskPriorities: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -71,6 +72,7 @@ export function TaskWorkspace({
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'BOARD' | 'LIST'>('BOARD');
+  const [collaborationVersion, setCollaborationVersion] = useState(0);
 
   const isAdmin = project.teamRole === 'ADMIN';
 
@@ -119,6 +121,7 @@ export function TaskWorkspace({
       current.map((item) => (item.id === task.id ? task : item)),
     );
     populateEditor(task);
+    setCollaborationVersion((current) => current + 1);
   }
 
   async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
@@ -235,6 +238,7 @@ export function TaskWorkspace({
       if (selectedTask?.id === task.id) {
         setSelectedTask(task);
         populateEditor(task);
+        setCollaborationVersion((current) => current + 1);
       }
     } catch (caughtError) {
       setError(
@@ -629,6 +633,14 @@ export function TaskWorkspace({
           </article>
         )}
       </div>
+
+      {selectedTask === null ? null : (
+        <TaskCollaboration
+          key={selectedTask.id}
+          refreshVersion={collaborationVersion}
+          taskId={selectedTask.id}
+        />
+      )}
     </section>
   );
 }

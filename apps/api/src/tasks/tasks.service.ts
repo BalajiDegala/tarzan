@@ -61,20 +61,33 @@ export class TasksService {
       await this.requireAssignableMember(access.teamId, dto.assigneeId);
     }
 
-    const task = await this.prisma.task.create({
-      data: {
-        assigneeId: dto.assigneeId,
-        description: this.normalizeOptionalText(dto.description),
-        dueDate: this.parseDueDate(dto.dueDate),
-        labels: this.normalizeLabels(dto.labels),
-        priority: dto.priority ?? TaskPriority.MEDIUM,
-        projectId: dto.projectId,
-        reporterId: userId,
-        status: TaskStatus.BACKLOG,
-        title: dto.title,
-        type: dto.type ?? TaskType.TASK,
-      },
-      select: { id: true },
+    const task = await this.prisma.$transaction(async (transaction) => {
+      const createdTask = await transaction.task.create({
+        data: {
+          assigneeId: dto.assigneeId,
+          description: this.normalizeOptionalText(dto.description),
+          dueDate: this.parseDueDate(dto.dueDate),
+          labels: this.normalizeLabels(dto.labels),
+          priority: dto.priority ?? TaskPriority.MEDIUM,
+          projectId: dto.projectId,
+          reporterId: userId,
+          status: TaskStatus.BACKLOG,
+          title: dto.title,
+          type: dto.type ?? TaskType.TASK,
+        },
+        select: { id: true },
+      });
+
+      await transaction.activity.create({
+        data: {
+          action: 'TASK_CREATED',
+          metadata: { title: dto.title },
+          taskId: createdTask.id,
+          userId,
+        },
+      });
+
+      return createdTask;
     });
 
     return this.getById(userId, task.id);
@@ -119,23 +132,37 @@ export class TasksService {
     const task = await this.findVisibleTask(userId, taskId);
     this.requireTaskEditor(userId, task);
 
-    await this.prisma.task.update({
-      data: {
-        ...(dto.description === undefined
-          ? {}
-          : { description: this.normalizeOptionalText(dto.description) }),
-        ...(dto.dueDate === undefined
-          ? {}
-          : { dueDate: this.parseDueDate(dto.dueDate) }),
-        ...(dto.labels === undefined
-          ? {}
-          : { labels: this.normalizeLabels(dto.labels) }),
-        ...(dto.priority === undefined ? {} : { priority: dto.priority }),
-        ...(dto.title === undefined ? {} : { title: dto.title }),
-        ...(dto.type === undefined ? {} : { type: dto.type }),
-      },
-      where: { id: taskId },
-    });
+    const fields = (
+      ['title', 'description', 'type', 'priority', 'dueDate', 'labels'] as const
+    ).filter((field) => dto[field] !== undefined);
+
+    await this.prisma.$transaction([
+      this.prisma.task.update({
+        data: {
+          ...(dto.description === undefined
+            ? {}
+            : { description: this.normalizeOptionalText(dto.description) }),
+          ...(dto.dueDate === undefined
+            ? {}
+            : { dueDate: this.parseDueDate(dto.dueDate) }),
+          ...(dto.labels === undefined
+            ? {}
+            : { labels: this.normalizeLabels(dto.labels) }),
+          ...(dto.priority === undefined ? {} : { priority: dto.priority }),
+          ...(dto.title === undefined ? {} : { title: dto.title }),
+          ...(dto.type === undefined ? {} : { type: dto.type }),
+        },
+        where: { id: taskId },
+      }),
+      this.prisma.activity.create({
+        data: {
+          action: 'TASK_UPDATED',
+          metadata: { fields },
+          taskId,
+          userId,
+        },
+      }),
+    ]);
 
     return this.getById(userId, taskId);
   }
@@ -154,10 +181,24 @@ export class TasksService {
     const task = await this.findVisibleTask(userId, taskId);
     this.requireTaskEditor(userId, task);
 
-    await this.prisma.task.update({
-      data: { status: dto.status },
-      where: { id: taskId },
-    });
+    if (task.status === dto.status) {
+      return { task: this.toTaskDetails(task) };
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.task.update({
+        data: { status: dto.status },
+        where: { id: taskId },
+      }),
+      this.prisma.activity.create({
+        data: {
+          action: 'STATUS_CHANGED',
+          metadata: { from: task.status, to: dto.status },
+          taskId,
+          userId,
+        },
+      }),
+    ]);
 
     return this.getById(userId, taskId);
   }
@@ -170,14 +211,32 @@ export class TasksService {
     const task = await this.findVisibleTask(userId, taskId);
     this.requireTeamAdmin(task);
 
-    if (dto.assigneeId !== null) {
-      await this.requireAssignableMember(task.project.team.id, dto.assigneeId);
+    const nextAssignee =
+      dto.assigneeId === null
+        ? null
+        : await this.requireAssignableMember(
+            task.project.team.id,
+            dto.assigneeId,
+          );
+
+    if (task.assigneeId === dto.assigneeId) {
+      return { task: this.toTaskDetails(task) };
     }
 
-    await this.prisma.task.update({
-      data: { assigneeId: dto.assigneeId },
-      where: { id: taskId },
-    });
+    await this.prisma.$transaction([
+      this.prisma.task.update({
+        data: { assigneeId: dto.assigneeId },
+        where: { id: taskId },
+      }),
+      this.prisma.activity.create({
+        data: {
+          action: 'ASSIGNEE_CHANGED',
+          metadata: { from: task.assignee, to: nextAssignee },
+          taskId,
+          userId,
+        },
+      }),
+    ]);
 
     return this.getById(userId, taskId);
   }
@@ -281,9 +340,9 @@ export class TasksService {
   private async requireAssignableMember(
     teamId: string,
     assigneeId: string,
-  ): Promise<void> {
+  ): Promise<{ id: string; name: string }> {
     const membership = await this.prisma.teamMember.findUnique({
-      select: { userId: true },
+      select: { user: { select: { id: true, name: true } } },
       where: { teamId_userId: { teamId, userId: assigneeId } },
     });
 
@@ -292,6 +351,8 @@ export class TasksService {
         'Assignee must be a member of the project team',
       );
     }
+
+    return membership.user;
   }
 
   private normalizeOptionalText(value?: string): string | null {

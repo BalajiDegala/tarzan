@@ -1,5 +1,8 @@
 import type {
+  ActivityListResponse,
   AuthSession,
+  CommentListResponse,
+  CommentResponse,
   ProjectListResponse,
   ProjectResponse,
   TeamListResponse,
@@ -179,4 +182,20 @@ export const tasksApi = {
       body: JSON.stringify({ status }),
       method: 'PATCH',
     }),
+};
+
+export const collaborationApi = {
+  createComment: (taskId: string, content: string) =>
+    request<CommentResponse>(`/tasks/${encodeURIComponent(taskId)}/comments`, {
+      body: JSON.stringify({ content }),
+      method: 'POST',
+    }),
+  listActivity: (taskId: string) =>
+    request<ActivityListResponse>(
+      `/tasks/${encodeURIComponent(taskId)}/activity`,
+    ),
+  listComments: (taskId: string) =>
+    request<CommentListResponse>(
+      `/tasks/${encodeURIComponent(taskId)}/comments`,
+    ),
 };

@@ -31,6 +31,7 @@
     "smoke:teams": "node scripts/smoke-teams.mjs",
     "smoke:projects": "node scripts/smoke-projects.mjs",
     "smoke:tasks": "node scripts/smoke-tasks.mjs",
+    "smoke:collaboration": "node scripts/smoke-collaboration.mjs",
     "test": "npm run build:packages && npm run test --workspaces --if-present",
     "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present"
   },

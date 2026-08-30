@@ -57,13 +57,17 @@ function visibleTask(
 
 describe('TasksService', () => {
   const projectFindFirst = vi.fn();
+  const activityCreate = vi.fn();
   const taskCreate = vi.fn();
   const taskDelete = vi.fn();
   const taskFindFirst = vi.fn();
   const taskFindMany = vi.fn();
   const taskUpdate = vi.fn();
   const memberFindUnique = vi.fn();
+  const transaction = vi.fn();
   const prisma = {
+    $transaction: transaction,
+    activity: { create: activityCreate },
     project: { findFirst: projectFindFirst },
     task: {
       create: taskCreate,
@@ -77,7 +81,12 @@ describe('TasksService', () => {
   let service: TasksService;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    transaction.mockImplementation(
+      async (input: unknown[] | ((client: PrismaService) => unknown)) =>
+        typeof input === 'function' ? input(prisma) : Promise.all(input),
+    );
+    activityCreate.mockResolvedValue({ id: 'activity-id' });
     service = new TasksService(prisma);
   });
 
@@ -109,6 +118,15 @@ describe('TasksService', () => {
       }),
     );
     expect(taskCreate.mock.calls[0]?.[0].data).not.toHaveProperty('taskKey');
+    expect(activityCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'TASK_CREATED',
+          taskId,
+          userId: memberId,
+        }),
+      }),
+    );
     expect(result.task.taskKey).toBe('TASK-100');
   });
 
@@ -184,6 +202,14 @@ describe('TasksService', () => {
 
     expect(updated.task.title).toBe('Updated payment API');
     expect(moved.task.status).toBe('IN_PROGRESS');
+    expect(activityCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'STATUS_CHANGED',
+          metadata: { from: 'BACKLOG', to: 'IN_PROGRESS' },
+        }),
+      }),
+    );
   });
 
   it('prevents an unrelated regular member from editing a task', async () => {
@@ -212,7 +238,9 @@ describe('TasksService', () => {
         visibleTask(TeamRole.ADMIN, { assigneeId: memberId }),
       )
       .mockResolvedValueOnce(visibleTask());
-    memberFindUnique.mockResolvedValue({ userId: memberId });
+    memberFindUnique.mockResolvedValue({
+      user: { id: memberId, name: 'Team Member' },
+    });
     taskUpdate.mockResolvedValue({ id: taskId });
     taskDelete.mockResolvedValue({ id: taskId });
 
@@ -222,6 +250,17 @@ describe('TasksService', () => {
     await service.remove(adminId, taskId);
 
     expect(result.task.assignee?.id).toBe(memberId);
+    expect(activityCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'ASSIGNEE_CHANGED',
+          metadata: {
+            from: null,
+            to: { id: memberId, name: 'Team Member' },
+          },
+        }),
+      }),
+    );
     expect(taskDelete).toHaveBeenCalledWith({ where: { id: taskId } });
   });
 });

@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { validateEnvironment } from './config/environment';
+import { CollaborationModule } from './collaboration/collaboration.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProjectsModule } from './projects/projects.module';
 import { TasksModule } from './tasks/tasks.module';
@@ -22,6 +23,7 @@ import { TeamsModule } from './teams/teams.module';
     TeamsModule,
     ProjectsModule,
     TasksModule,
+    CollaborationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -52,6 +52,8 @@ model User {
   projectsCreated Project[]    @relation("ProjectCreator")
   tasksReported   Task[]       @relation("TaskReporter")
   tasksAssigned   Task[]       @relation("TaskAssignee")
+  comments        Comment[]
+  activities      Activity[]   @relation("ActivityActor")
   memberships     TeamMember[]
 
   @@map("users")
@@ -104,6 +106,8 @@ model Task {
   reporter    User         @relation("TaskReporter", fields: [reporterId], references: [id], onDelete: Restrict)
   dueDate     DateTime?    @map("due_date") @db.Date
   labels      String[]     @default([])
+  comments    Comment[]
+  activities  Activity[]
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
 
@@ -111,6 +115,36 @@ model Task {
   @@index([assigneeId])
   @@index([reporterId])
   @@map("tasks")
+}
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Uuid
+  taskId    String   @map("task_id") @db.Uuid
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([taskId, createdAt])
+  @@index([userId])
+  @@map("comments")
+}
+
+model Activity {
+  id        String   @id @default(uuid()) @db.Uuid
+  taskId    String   @map("task_id") @db.Uuid
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation("ActivityActor", fields: [userId], references: [id], onDelete: Restrict)
+  action    String   @db.VarChar(50)
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([taskId, createdAt])
+  @@index([userId])
+  @@map("activities")
 }
 
 model TeamMember {

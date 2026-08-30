@@ -32,8 +32,8 @@ Tarzan is a simple, fast team work-management platform. This repository implemen
 
 From the repository root:
 
-```powershell
-Copy-Item .env.example .env
+```bash
+cp .env.example .env
 npm install
 docker compose up -d db
 npm run prisma:generate
@@ -48,8 +48,8 @@ The development command starts both workspaces with watch mode. PostgreSQL data 
 
 ## Run the complete stack in Docker
 
-```powershell
-Copy-Item .env.example .env
+```bash
+cp .env.example .env
 docker compose up --build
 ```
 
@@ -57,19 +57,19 @@ Open `http://localhost:5173`. The Nginx web container proxies `/api/*` to the AP
 
 To add the demo workspace after the database is healthy, run this from a second terminal:
 
-```powershell
+```bash
 npm run db:seed
 ```
 
 To stop the stack without deleting database data:
 
-```powershell
+```bash
 docker compose down
 ```
 
 ## Quality checks
 
-```powershell
+```bash
 npm run format:check
 npm run lint
 npm run typecheck
@@ -166,7 +166,7 @@ M1 introduces the `User` model, M2 adds `Team` and `TeamMember`, M3 adds `Projec
 
 After a future schema change:
 
-```powershell
+```bash
 npm run prisma:migrate:dev -- --name describe_the_change
 npm run prisma:generate
 ```
@@ -204,7 +204,10 @@ prisma/      Prisma schema and migrations
 scripts/     End-to-end smoke verification
 docker/      Production container definitions
 docs/        Product requirements and technical specification
+deployment/  Local, Docker, Kubernetes, Helm, and CI/CD runbooks
 ```
+
+For the complete deployment learning path, start with [`deployment/README.md`](deployment/README.md).
 
 ## Current assumptions
 

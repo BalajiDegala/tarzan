@@ -32,7 +32,12 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.config.{js,ts}', 'eslint.config.js', 'scripts/**/*.{js,mjs}'],
+    files: [
+      '**/*.config.{js,ts}',
+      'eslint.config.js',
+      'prisma/**/*.{js,mjs}',
+      'scripts/**/*.{js,mjs}',
+    ],
     languageOptions: {
       globals: globals.node,
     },

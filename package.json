@@ -18,6 +18,7 @@
     "build": "npm run build:packages && npm run build:apps",
     "build:apps": "npm run build --workspace @tarzan/api && npm run build --workspace @tarzan/web",
     "build:packages": "npm run build --workspace @tarzan/types && npm run build --workspace @tarzan/config",
+    "db:seed": "node prisma/seed.mjs",
     "dev": "concurrently --kill-others-on-fail --names API,WEB --prefix-colors cyan,magenta \"npm run dev --workspace @tarzan/api\" \"npm run dev --workspace @tarzan/web\"",
     "predev": "npm run build:packages",
     "format": "prettier --write .",
@@ -32,6 +33,7 @@
     "smoke:projects": "node scripts/smoke-projects.mjs",
     "smoke:tasks": "node scripts/smoke-tasks.mjs",
     "smoke:collaboration": "node scripts/smoke-collaboration.mjs",
+    "smoke:seed": "node scripts/smoke-seed.mjs",
     "test": "npm run build:packages && npm run test --workspaces --if-present",
     "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present"
   },

@@ -1,6 +1,6 @@
 # Tarzan
 
-Tarzan is a simple, fast team work-management platform. This repository currently implements **M0 (Foundation)** through **M7 (Search & Filters)** from the product specification in `docs/`.
+Tarzan is a simple, fast team work-management platform. This repository implements the complete **M0-M8 MVP** from the product specification in `docs/`.
 
 ## What is included
 
@@ -17,10 +17,10 @@ Tarzan is a simple, fast team work-management platform. This repository currentl
 - Six-column Kanban board with drag-and-drop status persistence and a list-view fallback
 - Team-scoped task comments and structured activity history
 - Server-side task search with status, priority, type, assignee, and label filters
+- Idempotent demo data with five users, one project, twelve tasks, comments, and activity
+- Confirmation for destructive task deletion and hardened environment validation
 - Docker Compose services for PostgreSQL, the API, and the web app
 - ESLint, Prettier, Vitest, type checking, and production builds
-
-MVP hardening and seed data remain for the final milestone.
 
 ## Prerequisites
 
@@ -38,10 +38,11 @@ npm install
 docker compose up -d db
 npm run prisma:generate
 npm run prisma:migrate:deploy
+npm run db:seed
 npm run dev
 ```
 
-Open the web app at `http://localhost:5173` and create an account. The API health endpoint is available at `http://localhost:3000/api/health`.
+Open the web app at `http://localhost:5173`. The API health endpoint is available at `http://localhost:3000/api/health`.
 
 The development command starts both workspaces with watch mode. PostgreSQL data is retained in the `tarzan_postgres_data` Docker volume.
 
@@ -53,6 +54,12 @@ docker compose up --build
 ```
 
 Open `http://localhost:5173`. The Nginx web container proxies `/api/*` to the API container.
+
+To add the demo workspace after the database is healthy, run this from a second terminal:
+
+```powershell
+npm run db:seed
+```
 
 To stop the stack without deleting database data:
 
@@ -68,17 +75,30 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
+npx prisma validate --schema prisma/schema.prisma
 docker compose config --quiet
 npm run smoke:auth
 npm run smoke:teams
 npm run smoke:projects
 npm run smoke:tasks
 npm run smoke:collaboration
+npm run smoke:seed
 ```
 
 To apply formatting, run `npm run format`.
 
-Run the smoke commands while the complete Docker stack is running. They create unique development-only accounts and verify the real authentication, team, project, task, and collaboration lifecycles through Nginx, the API, and PostgreSQL.
+Run the smoke commands while the complete Docker stack is running. The lifecycle checks create unique development-only accounts and verify the real authentication, team, project, task, and collaboration flows through Nginx, the API, and PostgreSQL. Run `npm run db:seed` before `smoke:seed`.
+
+## Demo workspace
+
+`npm run db:seed` safely upserts a repeatable sample workspace without deleting other data. It contains five team members, one project, twelve tasks spanning every workflow status, and sample comments and activity.
+
+Sign in with:
+
+- Email: `admin@tarzan.local`
+- Password: `TarzanDemo1!`
+
+These credentials are for local development only. Change all credentials and `JWT_SECRET`, and set `COOKIE_SECURE=true`, before deploying to a shared or public environment.
 
 ## Authentication API
 
@@ -142,7 +162,7 @@ Comments include their author and timestamps. Task creation, field edits, workfl
 
 ## Database workflow
 
-M1 introduces the `User` model, M2 adds `Team` and `TeamMember`, M3 adds `Project`, M4 adds `Task` plus its fixed enums and key sequence, and M6 adds `Comment` and `Activity`. The API container automatically runs all checked-in migrations with `prisma migrate deploy` before it starts.
+M1 introduces the `User` model, M2 adds `Team` and `TeamMember`, M3 adds `Project`, M4 adds `Task` plus its fixed enums and key sequence, and M6 adds `Comment` and `Activity`. M8 adds deterministic development fixtures without changing the schema. The API container automatically runs all checked-in migrations with `prisma migrate deploy` before it starts.
 
 After a future schema change:
 
@@ -181,6 +201,7 @@ packages/
   config/    Shared runtime configuration
   types/     Shared TypeScript contracts
 prisma/      Prisma schema and migrations
+scripts/     End-to-end smoke verification
 docker/      Production container definitions
 docs/        Product requirements and technical specification
 ```
@@ -196,4 +217,4 @@ docs/        Product requirements and technical specification
 - Project write access follows the owning team's admin role; regular team members have read-only project access.
 - Regular members may update tasks they reported or are assigned to; team admins retain full task management access.
 - Task creation, field edits, status changes, and assignment changes are retained as structured activity history.
-- Product database models continue to be introduced by their owning milestones, avoiding premature migrations.
+- The checked-in schema represents the complete MVP data model; later schema changes should continue through named Prisma migrations.

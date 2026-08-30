@@ -304,7 +304,14 @@ export function TaskWorkspace({
   }
 
   async function handleDelete() {
-    if (selectedTask === null) return;
+    if (
+      selectedTask === null ||
+      !window.confirm(
+        `Delete ${selectedTask.taskKey} "${selectedTask.title}"? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
     setWorking(true);
     setError(null);
 

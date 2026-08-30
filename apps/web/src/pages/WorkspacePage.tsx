@@ -63,6 +63,16 @@ export function WorkspacePage() {
             const projectResponse = await projectsApi.list(team.id);
             if (active) {
               setProjects(projectResponse.projects);
+
+              const firstProject = projectResponse.projects[0];
+              if (firstProject !== undefined) {
+                const { project } = await projectsApi.get(firstProject.id);
+                if (active) {
+                  setSelectedProject(project);
+                  setEditProjectName(project.name);
+                  setEditProjectDescription(project.description ?? '');
+                }
+              }
             }
           }
         }
@@ -128,7 +138,18 @@ export function WorkspacePage() {
       const { projects: teamProjects } = await projectsApi.list(teamId);
       setSelectedTeam(team);
       setProjects(teamProjects);
-      setSelectedProject(null);
+
+      const firstProject = teamProjects[0];
+      if (firstProject === undefined) {
+        setSelectedProject(null);
+        setEditProjectName('');
+        setEditProjectDescription('');
+      } else {
+        const { project } = await projectsApi.get(firstProject.id);
+        setSelectedProject(project);
+        setEditProjectName(project.name);
+        setEditProjectDescription(project.description ?? '');
+      }
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
@@ -307,12 +328,27 @@ export function WorkspacePage() {
   return (
     <main className="min-h-screen bg-[#f4f5ef] text-[#102018]">
       <header className="border-b border-emerald-950/10 bg-[#07130f] text-stone-100">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
-          <div className="flex items-center gap-8">
+        <div className="mx-auto flex min-h-20 max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4 lg:px-8">
+          <div className="flex flex-wrap items-center gap-5 sm:gap-8">
             <Brand />
-            <span className="hidden rounded-lg bg-white/5 px-3 py-2 text-sm font-bold text-lime-200 sm:inline-flex">
-              Teams
-            </span>
+            <nav
+              aria-label="Workspace sections"
+              className="flex items-center rounded-xl border border-white/10 bg-white/5 p-1"
+            >
+              {[
+                ['Teams', '#teams'],
+                ['Projects', '#projects'],
+                ['Board', '#board'],
+              ].map(([label, href]) => (
+                <a
+                  className="rounded-lg px-3 py-2 text-xs font-black text-stone-300 transition hover:bg-white/10 hover:text-lime-200 sm:text-sm"
+                  href={href}
+                  key={href}
+                >
+                  {label}
+                </a>
+              ))}
+            </nav>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden text-right sm:block">
@@ -337,13 +373,13 @@ export function WorkspacePage() {
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
         <div className="mb-10">
           <p className="text-sm font-black tracking-[0.16em] text-emerald-700 uppercase">
-            Team management
+            Workspace overview
           </p>
           <h1 className="mt-3 text-4xl font-black tracking-[-0.045em] sm:text-5xl">
-            Welcome, {firstName}.
+            Your work, {firstName}.
           </h1>
           <p className="mt-3 text-lg text-emerald-950/60">
-            Build teams, organize projects, and keep ownership clear.
+            Move directly between your teams, projects, and delivery board.
           </p>
         </div>
 
@@ -364,7 +400,7 @@ export function WorkspacePage() {
         )}
 
         <div className="grid items-start gap-6 lg:grid-cols-[20rem_minmax(0,1fr)]">
-          <aside className="space-y-5">
+          <aside className="scroll-mt-6 space-y-5" id="teams">
             <form
               className="rounded-[1.5rem] bg-[#0c251b] p-5 text-stone-100 shadow-lg shadow-emerald-950/10"
               onSubmit={handleCreateTeam}
@@ -559,7 +595,10 @@ function TeamPanel({
         </div>
       </div>
 
-      <div className="border-b border-emerald-950/10 px-7 py-7 sm:px-9">
+      <div
+        className="scroll-mt-6 border-b border-emerald-950/10 px-7 py-7 sm:px-9"
+        id="projects"
+      >
         <div className="mb-5 flex items-center justify-between">
           <div>
             <p className="text-xs font-black tracking-[0.14em] text-emerald-700 uppercase">
@@ -709,6 +748,27 @@ function TeamPanel({
         )}
 
         {selectedProject === null ? null : (
+          <a
+            className="mt-5 inline-flex rounded-xl bg-emerald-950/5 px-4 py-2.5 text-sm font-black text-emerald-800 transition hover:bg-emerald-950/10"
+            href="#board"
+          >
+            Open {selectedProject.name} board ↓
+          </a>
+        )}
+      </div>
+
+      <div className="scroll-mt-6 px-7 pb-7 sm:px-9 sm:pb-9" id="board">
+        {selectedProject === null ? (
+          <div className="mt-7 rounded-2xl border border-dashed border-emerald-950/15 px-5 py-10 text-center">
+            <p className="text-xs font-black tracking-[0.14em] text-emerald-700 uppercase">
+              Delivery board
+            </p>
+            <h3 className="mt-2 text-xl font-black">Select a project first</h3>
+            <p className="mt-2 text-sm text-emerald-950/50">
+              Create or select a project above to open its task board.
+            </p>
+          </div>
+        ) : (
           <TaskWorkspace
             currentUserId={currentUserId}
             key={selectedProject.id}

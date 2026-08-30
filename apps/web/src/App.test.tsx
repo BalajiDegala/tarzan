@@ -79,8 +79,19 @@ describe('authentication flow', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
     expect(
-      await screen.findByRole('heading', { name: 'Welcome, Balaji.' }),
+      await screen.findByRole('heading', { name: 'Your work, Balaji.' }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', { name: 'Workspace sections' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute(
+      'href',
+      '#projects',
+    );
+    expect(screen.getByRole('link', { name: 'Board' })).toHaveAttribute(
+      'href',
+      '#board',
+    );
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/auth/login'),
       expect.objectContaining({ credentials: 'include', method: 'POST' }),
@@ -284,9 +295,6 @@ describe('authentication flow', () => {
 
     renderApp('/');
 
-    await user.click(
-      await screen.findByRole('button', { name: /Customer portal/ }),
-    );
     await user.type(await screen.findByLabelText('Task title'), task.title);
     await user.type(
       screen.getByLabelText('Task description'),

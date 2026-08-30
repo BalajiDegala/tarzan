@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: tarzan
+  namespace: argocd
+spec:
+  description: Tarzan application delivery boundary
+  sourceRepos:
+    - ssh://git@gitlab.example.com/platform/tarzan.git
+    - ssh://git@gitlab.example.com/platform/tarzan-gitops.git
+  destinations:
+    - namespace: tarzan
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: ''
+      kind: PersistentVolume
+    - group: storage.k8s.io
+      kind: StorageClass
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  orphanedResources:
+    warn: true

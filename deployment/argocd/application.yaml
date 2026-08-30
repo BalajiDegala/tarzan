@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tarzan
+  namespace: argocd
+spec:
+  project: tarzan
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tarzan
+  sources:
+    - repoURL: ssh://git@gitlab.example.com/platform/tarzan.git
+      targetRevision: master
+      path: deployment/helm/tarzan
+      helm:
+        releaseName: tarzan
+        valueFiles:
+          - $values/environments/production/tarzan-values.yaml
+    - repoURL: ssh://git@gitlab.example.com/platform/tarzan-gitops.git
+      targetRevision: master
+      ref: values
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    managedNamespaceMetadata:
+      labels:
+        app.kubernetes.io/part-of: tarzan
+        app.kubernetes.io/managed-by: argocd
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+    retry:
+      limit: 5
+      refresh: true
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

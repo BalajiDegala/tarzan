@@ -6,6 +6,11 @@ import type {
   TeamMemberResponse,
   TeamResponse,
   TeamRole,
+  TaskListResponse,
+  TaskPriority,
+  TaskResponse,
+  TaskStatus,
+  TaskType,
 } from '@tarzan/types';
 
 const API_BASE_URL =
@@ -116,6 +121,62 @@ export const projectsApi = {
   update: (projectId: string, input: { description?: string; name?: string }) =>
     request<ProjectResponse>(`/projects/${encodeURIComponent(projectId)}`, {
       body: JSON.stringify(input),
+      method: 'PATCH',
+    }),
+};
+
+export const tasksApi = {
+  create: (input: {
+    assigneeId?: string;
+    description?: string;
+    dueDate?: string;
+    labels?: string[];
+    priority?: TaskPriority;
+    projectId: string;
+    title: string;
+    type?: TaskType;
+  }) =>
+    request<TaskResponse>('/tasks', {
+      body: JSON.stringify(input),
+      method: 'POST',
+    }),
+  get: (taskId: string) =>
+    request<TaskResponse>(`/tasks/${encodeURIComponent(taskId)}`),
+  list: (projectId?: string) =>
+    request<TaskListResponse>(
+      `/tasks${
+        projectId === undefined
+          ? ''
+          : `?projectId=${encodeURIComponent(projectId)}`
+      }`,
+    ),
+  remove: (taskId: string) =>
+    request<void>(`/tasks/${encodeURIComponent(taskId)}`, {
+      method: 'DELETE',
+    }),
+  update: (
+    taskId: string,
+    input: {
+      description?: string;
+      dueDate?: string | null;
+      labels?: string[];
+      priority?: TaskPriority;
+      title?: string;
+      type?: TaskType;
+    },
+  ) =>
+    request<TaskResponse>(`/tasks/${encodeURIComponent(taskId)}`, {
+      body: JSON.stringify(input),
+      method: 'PATCH',
+    }),
+  updateAssignee: (taskId: string, assigneeId: string | null) =>
+    request<TaskResponse>(`/tasks/${encodeURIComponent(taskId)}/assignee`, {
+      body: JSON.stringify({ assigneeId }),
+      method: 'PATCH',
+    }),
+  updateStatus: (taskId: string, status: TaskStatus) =>
+    request<TaskResponse>(`/tasks/${encodeURIComponent(taskId)}/status`, {
+      body: JSON.stringify({ status }),
       method: 'PATCH',
     }),
 };

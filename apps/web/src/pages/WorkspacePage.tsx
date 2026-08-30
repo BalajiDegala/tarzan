@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { Brand } from '../components/Brand';
 import { projectsApi, teamsApi } from '../lib/api';
+import { TaskWorkspace } from './TaskWorkspace';
 
 function asSummary(team: TeamDetails): TeamSummary {
   return {
@@ -452,6 +453,7 @@ export function WorkspacePage() {
             projectName={projectName}
             projects={projects}
             selectedProject={selectedProject}
+            currentUserId={user.id}
             onProjectDescriptionChange={setProjectDescription}
             onProjectNameChange={setProjectName}
             team={selectedTeam}
@@ -464,6 +466,7 @@ export function WorkspacePage() {
 }
 
 interface TeamPanelProps {
+  currentUserId: string;
   editProjectDescription: string;
   editProjectName: string;
   memberEmail: string;
@@ -488,6 +491,7 @@ interface TeamPanelProps {
 }
 
 function TeamPanel({
+  currentUserId,
   editProjectDescription,
   editProjectName,
   memberEmail,
@@ -702,6 +706,15 @@ function TeamPanel({
               </article>
             )}
           </div>
+        )}
+
+        {selectedProject === null ? null : (
+          <TaskWorkspace
+            currentUserId={currentUserId}
+            key={selectedProject.id}
+            members={team.members}
+            project={selectedProject}
+          />
         )}
       </div>
 

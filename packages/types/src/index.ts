@@ -82,3 +82,43 @@ export interface ProjectListResponse {
 export interface ProjectResponse {
   project: ProjectDetails;
 }
+
+export type TaskType = 'TASK' | 'BUG' | 'STORY';
+export type TaskStatus =
+  'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'BLOCKED';
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export interface TaskUser {
+  id: string;
+  name: string;
+}
+
+export interface TaskSummary {
+  assignee: TaskUser | null;
+  createdAt: string;
+  dueDate: string | null;
+  id: string;
+  priority: TaskPriority;
+  projectId: string;
+  projectName: string;
+  status: TaskStatus;
+  taskKey: string;
+  teamRole: TeamRole;
+  title: string;
+  type: TaskType;
+  updatedAt: string;
+}
+
+export interface TaskDetails extends TaskSummary {
+  description: string | null;
+  labels: string[];
+  reporter: TaskUser;
+}
+
+export interface TaskListResponse {
+  tasks: TaskSummary[];
+}
+
+export interface TaskResponse {
+  task: TaskDetails;
+}

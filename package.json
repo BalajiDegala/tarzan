@@ -30,6 +30,7 @@
     "smoke:auth": "node scripts/smoke-auth.mjs",
     "smoke:teams": "node scripts/smoke-teams.mjs",
     "smoke:projects": "node scripts/smoke-projects.mjs",
+    "smoke:tasks": "node scripts/smoke-tasks.mjs",
     "test": "npm run build:packages && npm run test --workspaces --if-present",
     "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present"
   },

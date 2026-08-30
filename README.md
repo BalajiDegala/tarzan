@@ -1,6 +1,6 @@
 # Tarzan
 
-Tarzan is a simple, fast team work-management platform. This repository currently implements **M0 (Foundation)** through **M3 (Projects)** from the product specification in `docs/`.
+Tarzan is a simple, fast team work-management platform. This repository currently implements **M0 (Foundation)** through **M4 (Tasks)** from the product specification in `docs/`.
 
 ## What is included
 
@@ -13,10 +13,11 @@ Tarzan is a simple, fast team work-management platform. This repository currentl
 - Team creation with automatic creator-admin membership
 - Team member listing, role assignment, removal, and authorization boundaries
 - Team-scoped project creation, listing, detail views, and editing
+- Task CRUD with generated keys, assignment, fixed workflow status, type, priority, due dates, and labels
 - Docker Compose services for PostgreSQL, the API, and the web app
 - ESLint, Prettier, Vitest, type checking, and production builds
 
-Tasks and later product milestones have not been implemented yet.
+Kanban, collaboration, search, and later product milestones have not been implemented yet.
 
 ## Prerequisites
 
@@ -68,6 +69,7 @@ docker compose config --quiet
 npm run smoke:auth
 npm run smoke:teams
 npm run smoke:projects
+npm run smoke:tasks
 ```
 
 To apply formatting, run `npm run format`.
@@ -108,9 +110,23 @@ Team creators become admins automatically. Only team admins can add or remove me
 
 Pass `teamId` as an optional query parameter to filter the project list. Every team member can list and view that team's projects; only team admins can create or edit them. Projects are deleted automatically if their owning team is deleted.
 
+## Tasks API
+
+| Method   | Endpoint                  | Purpose                                    |
+| -------- | ------------------------- | ------------------------------------------ |
+| `POST`   | `/api/tasks`              | Create a task in a visible project         |
+| `GET`    | `/api/tasks`              | List the current user's visible tasks      |
+| `GET`    | `/api/tasks/:id`          | Get a visible task's details               |
+| `PATCH`  | `/api/tasks/:id`          | Update permitted task fields               |
+| `DELETE` | `/api/tasks/:id`          | Delete a task as a team admin              |
+| `PATCH`  | `/api/tasks/:id/status`   | Move a permitted task through the workflow |
+| `PATCH`  | `/api/tasks/:id/assignee` | Assign a team member as a team admin       |
+
+Pass `projectId` as an optional query parameter to scope the task list. Task keys are generated atomically by PostgreSQL in the `TASK-100` format. All team members can create tasks. Team admins can update, assign, move, and delete any team task; regular members can update or move tasks they reported or are assigned to. Only members of the owning team can be assigned.
+
 ## Database workflow
 
-M1 introduces the `User` model, M2 adds `Team` and `TeamMember`, and M3 adds `Project`. The API container automatically runs all checked-in migrations with `prisma migrate deploy` before it starts.
+M1 introduces the `User` model, M2 adds `Team` and `TeamMember`, M3 adds `Project`, and M4 adds `Task` plus its fixed enums and key sequence. The API container automatically runs all checked-in migrations with `prisma migrate deploy` before it starts.
 
 After a future schema change:
 
@@ -162,4 +178,6 @@ docs/        Product requirements and technical specification
 - Authentication cookies last 24 hours and are invalidated server-side on logout.
 - Team membership requires an existing registered account; invitations and email notifications remain outside the MVP.
 - Project write access follows the owning team's admin role; regular team members have read-only project access.
+- Regular members may update tasks they reported or are assigned to; team admins retain full task management access.
+- Task status and assignee activity records are introduced with M6, the collaboration milestone.
 - Product database models continue to be introduced by their owning milestones, avoiding premature migrations.

@@ -1,4 +1,10 @@
-import type { AuthSession } from '@tarzan/types';
+import type {
+  AuthSession,
+  TeamListResponse,
+  TeamMemberResponse,
+  TeamResponse,
+  TeamRole,
+} from '@tarzan/types';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api';
@@ -65,4 +71,28 @@ export const authApi = {
       body: JSON.stringify(input),
       method: 'POST',
     }),
+};
+
+export const teamsApi = {
+  addMember: (teamId: string, input: { email: string; role: TeamRole }) =>
+    request<TeamMemberResponse>(
+      `/teams/${encodeURIComponent(teamId)}/members`,
+      {
+        body: JSON.stringify(input),
+        method: 'POST',
+      },
+    ),
+  create: (input: { name: string }) =>
+    request<TeamResponse>('/teams', {
+      body: JSON.stringify(input),
+      method: 'POST',
+    }),
+  get: (teamId: string) =>
+    request<TeamResponse>(`/teams/${encodeURIComponent(teamId)}`),
+  list: () => request<TeamListResponse>('/teams'),
+  removeMember: (teamId: string, userId: string) =>
+    request<void>(
+      `/teams/${encodeURIComponent(teamId)}/members/${encodeURIComponent(userId)}`,
+      { method: 'DELETE' },
+    ),
 };

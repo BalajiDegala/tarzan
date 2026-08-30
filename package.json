@@ -28,6 +28,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "prisma:migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
     "smoke:auth": "node scripts/smoke-auth.mjs",
+    "smoke:teams": "node scripts/smoke-teams.mjs",
     "test": "npm run build:packages && npm run test --workspaces --if-present",
     "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present"
   },

@@ -1,6 +1,6 @@
 # Tarzan
 
-Tarzan is a simple, fast team work-management platform. This repository currently implements **M0 (Foundation)** and **M1 (Authentication)** from the product specification in `docs/`.
+Tarzan is a simple, fast team work-management platform. This repository currently implements **M0 (Foundation)**, **M1 (Authentication)**, and **M2 (Teams)** from the product specification in `docs/`.
 
 ## What is included
 
@@ -10,10 +10,12 @@ Tarzan is a simple, fast team work-management platform. This repository currentl
 - PostgreSQL persistence through Prisma migrations
 - Secure registration, login, logout, session restoration, and protected routes
 - Bcrypt password hashing and JWT authentication in HttpOnly SameSite cookies
+- Team creation with automatic creator-admin membership
+- Team member listing, role assignment, removal, and authorization boundaries
 - Docker Compose services for PostgreSQL, the API, and the web app
 - ESLint, Prettier, Vitest, type checking, and production builds
 
-Teams, projects, tasks, and later product milestones have not been implemented yet.
+Projects, tasks, and later product milestones have not been implemented yet.
 
 ## Prerequisites
 
@@ -63,11 +65,12 @@ npm test
 npm run build
 docker compose config --quiet
 npm run smoke:auth
+npm run smoke:teams
 ```
 
 To apply formatting, run `npm run format`.
 
-Run `npm run smoke:auth` while the complete Docker stack is running. It creates a unique development-only account and verifies registration, cookie security flags, current-user access, logout invalidation, and login.
+Run the smoke commands while the complete Docker stack is running. They create unique development-only accounts and verify the real authentication and team-management lifecycles through Nginx, the API, and PostgreSQL.
 
 ## Authentication API
 
@@ -80,9 +83,21 @@ Run `npm run smoke:auth` while the complete Docker stack is running. It creates 
 
 The browser session uses a 24-hour JWT stored in an HttpOnly, SameSite=Lax cookie. Logout increments the user's token version, so a copied pre-logout token cannot be reused.
 
+## Teams API
+
+| Method   | Endpoint                         | Purpose                       |
+| -------- | -------------------------------- | ----------------------------- |
+| `POST`   | `/api/teams`                     | Create a team                 |
+| `GET`    | `/api/teams`                     | List the current user's teams |
+| `GET`    | `/api/teams/:id`                 | Get a team and its members    |
+| `POST`   | `/api/teams/:id/members`         | Add a registered user         |
+| `DELETE` | `/api/teams/:id/members/:userId` | Remove a team member          |
+
+Team creators become admins automatically. Only team admins can add or remove members, non-members cannot read team data, and the final team admin cannot be removed.
+
 ## Database workflow
 
-M1 introduces the `User` model and the first checked-in migration. The API container automatically runs `prisma migrate deploy` before it starts.
+M1 introduces the `User` model, and M2 adds `Team` and `TeamMember`. The API container automatically runs all checked-in migrations with `prisma migrate deploy` before it starts.
 
 After a future schema change:
 
@@ -130,6 +145,7 @@ docs/        Product requirements and technical specification
 - npm workspaces are sufficient for the initial monorepo; no additional task runner is needed yet.
 - PostgreSQL 16 is the baseline database version.
 - The web app uses Nginx in the production container and Vite during development.
-- Self-registered users start with the global `MEMBER` role; admin provisioning and team roles are owned by M2 and seed-data hardening.
+- Self-registered users start with the global `MEMBER` role. Team administration is scoped independently through each membership.
 - Authentication cookies last 24 hours and are invalidated server-side on logout.
+- Team membership requires an existing registered account; invitations and email notifications remain outside the MVP.
 - Product database models continue to be introduced by their owning milestones, avoiding premature migrations.

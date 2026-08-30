@@ -64,7 +64,8 @@ describe('authentication flow', () => {
       .mockResolvedValueOnce(
         jsonResponse({ message: 'Authentication required' }, 401),
       )
-      .mockResolvedValueOnce(jsonResponse({ user: authenticatedUser }));
+      .mockResolvedValueOnce(jsonResponse({ user: authenticatedUser }))
+      .mockResolvedValueOnce(jsonResponse({ teams: [] }));
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
 
@@ -80,9 +81,51 @@ describe('authentication flow', () => {
     expect(
       await screen.findByRole('heading', { name: 'Welcome, Balaji.' }),
     ).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenLastCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/auth/login'),
       expect.objectContaining({ credentials: 'include', method: 'POST' }),
+    );
+  });
+
+  it('creates the first team for an authenticated user', async () => {
+    const team = {
+      createdAt: '2026-08-30T08:20:00.000Z',
+      createdBy: { id: authenticatedUser.id, name: authenticatedUser.name },
+      id: '3cb79f02-b617-4f61-ac60-a56ee4998b53',
+      memberCount: 1,
+      members: [
+        {
+          email: authenticatedUser.email,
+          joinedAt: '2026-08-30T08:20:00.000Z',
+          name: authenticatedUser.name,
+          role: 'ADMIN',
+          userId: authenticatedUser.id,
+        },
+      ],
+      name: 'Platform',
+      role: 'ADMIN',
+      updatedAt: '2026-08-30T08:20:00.000Z',
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ user: authenticatedUser }))
+      .mockResolvedValueOnce(jsonResponse({ teams: [] }))
+      .mockResolvedValueOnce(jsonResponse({ team }));
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+
+    renderApp('/');
+
+    await user.type(await screen.findByLabelText('New team'), 'Platform');
+    await user.click(screen.getByRole('button', { name: 'Create team' }));
+
+    expect(
+      await screen.findByRole('heading', { name: 'Platform' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('1 member · admin')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      expect.stringMatching(/\/teams$/),
+      expect.objectContaining({ method: 'POST' }),
     );
   });
 });

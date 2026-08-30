@@ -301,7 +301,8 @@ describe('authentication flow', () => {
 
     renderApp('/board');
 
-    await user.type(await screen.findByLabelText('Task title'), task.title);
+    await user.click(await screen.findByRole('button', { name: 'New task' }));
+    await user.type(screen.getByLabelText('Task title'), task.title);
     expect(screen.getByText('Active project')).toBeInTheDocument();
     expect(screen.queryByLabelText('New team')).not.toBeInTheDocument();
     await user.type(
@@ -315,7 +316,7 @@ describe('authentication flow', () => {
     const taskCard = await screen.findByRole('button', {
       name: 'TASK-100 Implement payment API',
     });
-    expect(screen.getByText('TASK-100')).toBeInTheDocument();
+    expect(taskCard).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringMatching(/\/tasks$/),
       expect.objectContaining({ method: 'POST' }),

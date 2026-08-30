@@ -73,6 +73,8 @@ export function TaskWorkspace({
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'BOARD' | 'LIST'>('BOARD');
+  const [showCreate, setShowCreate] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [collaborationVersion, setCollaborationVersion] = useState(0);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<TaskStatus | ''>('');
@@ -180,6 +182,7 @@ export function TaskWorkspace({
       setDueDate('');
       setLabels('');
       setAssigneeId('');
+      setShowCreate(false);
     } catch (caughtError) {
       setError(
         caughtError instanceof Error
@@ -348,14 +351,42 @@ export function TaskWorkspace({
 
   return (
     <section className="mt-7 border-t border-emerald-950/10 pt-7">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-5">
         <div>
           <p className="text-xs font-black tracking-[0.14em] text-emerald-700 uppercase">
             Project workflow
           </p>
-          <h3 className="mt-1 text-xl font-black">{project.name} work</h3>
+          <h3 className="mt-1 text-2xl font-black">{project.name}</h3>
+          <p className="mt-1 text-sm text-emerald-950/50">
+            Drag cards between columns, or select a task to see its details.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            aria-expanded={showFilters}
+            className={`rounded-xl border px-4 py-2.5 text-sm font-black transition ${
+              showFilters
+                ? 'border-emerald-800 bg-emerald-50 text-emerald-900'
+                : 'border-emerald-950/10 bg-white text-emerald-800 hover:bg-emerald-50'
+            }`}
+            onClick={() => setShowFilters((current) => !current)}
+            type="button"
+          >
+            Filters
+            {Object.keys(appliedFilters).length === 0 ? null : (
+              <span className="ml-2 rounded-full bg-emerald-800 px-2 py-0.5 text-[0.65rem] text-white">
+                {Object.keys(appliedFilters).length}
+              </span>
+            )}
+          </button>
+          <button
+            aria-expanded={showCreate}
+            className="rounded-xl bg-emerald-900 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-800"
+            onClick={() => setShowCreate((current) => !current)}
+            type="button"
+          >
+            {showCreate ? 'Close form' : 'New task'}
+          </button>
           <div className="flex rounded-xl bg-emerald-950/5 p-1">
             {(['BOARD', 'LIST'] as const).map((option) => (
               <button
@@ -373,8 +404,8 @@ export function TaskWorkspace({
               </button>
             ))}
           </div>
-          <span className="rounded-full bg-emerald-950/5 px-3 py-1 text-xs font-black text-emerald-800">
-            {tasks.length}
+          <span className="rounded-full bg-emerald-950/5 px-3 py-2 text-xs font-black text-emerald-800">
+            {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
           </span>
         </div>
       </div>
@@ -388,179 +419,87 @@ export function TaskWorkspace({
         </p>
       )}
 
-      <form
-        aria-label="Task filters"
-        className="mb-5 grid gap-3 rounded-2xl border border-emerald-950/10 bg-white p-4 sm:grid-cols-2 xl:grid-cols-6"
-        onSubmit={handleApplyFilters}
-      >
-        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase xl:col-span-2">
-          Search tasks
-          <input
-            className="mt-2 w-full rounded-xl border border-emerald-950/10 px-3 py-2.5 text-sm font-medium normal-case outline-none focus:border-emerald-700"
-            maxLength={200}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Task key or title"
-            value={search}
-          />
-        </label>
-        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
-          Filter status
-          <select
-            className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-3 py-2.5 text-sm font-bold normal-case outline-none focus:border-emerald-700"
-            onChange={(event) =>
-              setFilterStatus(event.target.value as TaskStatus | '')
-            }
-            value={filterStatus}
-          >
-            <option value="">All statuses</option>
-            {taskStatuses.map((status) => (
-              <option key={status} value={status}>
-                {readable(status)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
-          Filter priority
-          <select
-            className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-3 py-2.5 text-sm font-bold normal-case outline-none focus:border-emerald-700"
-            onChange={(event) =>
-              setFilterPriority(event.target.value as TaskPriority | '')
-            }
-            value={filterPriority}
-          >
-            <option value="">All priorities</option>
-            {taskPriorities.map((item) => (
-              <option key={item} value={item}>
-                {readable(item)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
-          Filter type
-          <select
-            className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-3 py-2.5 text-sm font-bold normal-case outline-none focus:border-emerald-700"
-            onChange={(event) =>
-              setFilterType(event.target.value as TaskType | '')
-            }
-            value={filterType}
-          >
-            <option value="">All types</option>
-            {taskTypes.map((item) => (
-              <option key={item} value={item}>
-                {readable(item)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
-          Filter assignee
-          <select
-            className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-3 py-2.5 text-sm font-bold normal-case outline-none focus:border-emerald-700"
-            onChange={(event) => setFilterAssignee(event.target.value)}
-            value={filterAssignee}
-          >
-            <option value="">All assignees</option>
-            {members.map((member) => (
-              <option key={member.userId} value={member.userId}>
-                {member.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase xl:col-span-2">
-          Filter label
-          <input
-            className="mt-2 w-full rounded-xl border border-emerald-950/10 px-3 py-2.5 text-sm font-medium normal-case outline-none focus:border-emerald-700"
-            maxLength={50}
-            onChange={(event) => setFilterLabel(event.target.value)}
-            placeholder="e.g. backend"
-            value={filterLabel}
-          />
-        </label>
-        <div className="flex items-end gap-2 sm:col-span-2 xl:col-span-4">
-          <button
-            className="rounded-xl bg-emerald-900 px-5 py-2.5 text-sm font-black text-white"
-            type="submit"
-          >
-            Apply filters
-          </button>
-          <button
-            className="rounded-xl px-4 py-2.5 text-sm font-black text-emerald-800 hover:bg-emerald-50"
-            onClick={handleClearFilters}
-            type="button"
-          >
-            Clear
-          </button>
-        </div>
-      </form>
-
-      <form
-        className="mb-6 grid gap-3 rounded-2xl bg-emerald-950/[0.035] p-4 sm:grid-cols-2"
-        onSubmit={(event) => void handleCreate(event)}
-      >
-        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase sm:col-span-2">
-          Task title
-          <input
-            className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-4 py-3 text-sm font-medium normal-case outline-none focus:border-emerald-700"
-            maxLength={200}
-            minLength={2}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="What needs to be done?"
-            required
-            value={title}
-          />
-        </label>
-        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase sm:col-span-2">
-          Task description
-          <textarea
-            className="mt-2 min-h-20 w-full resize-y rounded-xl border border-emerald-950/10 bg-white px-4 py-3 text-sm font-medium normal-case outline-none focus:border-emerald-700"
-            maxLength={10000}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="Add useful context"
-            value={description}
-          />
-        </label>
-        <TaskSelect<TaskType>
-          label="Type"
-          onChange={setType}
-          options={taskTypes}
-          value={type}
-        />
-        <TaskSelect<TaskPriority>
-          label="Priority"
-          onChange={setPriority}
-          options={taskPriorities}
-          value={priority}
-        />
-        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
-          Due date
-          <input
-            className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-4 py-3 text-sm font-medium normal-case outline-none focus:border-emerald-700"
-            onChange={(event) => setDueDate(event.target.value)}
-            type="date"
-            value={dueDate}
-          />
-        </label>
-        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
-          Labels
-          <input
-            className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-4 py-3 text-sm font-medium normal-case outline-none focus:border-emerald-700"
-            onChange={(event) => setLabels(event.target.value)}
-            placeholder="backend, api"
-            value={labels}
-          />
-        </label>
-        {isAdmin ? (
-          <label className="text-xs font-black tracking-wide text-emerald-900 uppercase sm:col-span-2">
-            Assignee
+      {showFilters ? (
+        <form
+          aria-label="Task filters"
+          className="mb-6 grid gap-4 rounded-2xl border border-emerald-950/10 bg-white p-5 shadow-sm sm:grid-cols-2 xl:grid-cols-6"
+          onSubmit={handleApplyFilters}
+        >
+          <div className="sm:col-span-2 xl:col-span-6">
+            <h4 className="text-lg font-black">Filter this board</h4>
+            <p className="mt-1 text-sm text-emerald-950/50">
+              Narrow the board without changing any task data.
+            </p>
+          </div>
+          <label className="text-xs font-black tracking-wide text-emerald-900 uppercase xl:col-span-2">
+            Search tasks
+            <input
+              className="mt-2 w-full rounded-xl border border-emerald-950/10 px-3 py-2.5 text-sm font-medium normal-case outline-none focus:border-emerald-700"
+              maxLength={200}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Task key or title"
+              value={search}
+            />
+          </label>
+          <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
+            Filter status
             <select
-              className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-4 py-3 text-sm font-bold normal-case outline-none focus:border-emerald-700"
-              onChange={(event) => setAssigneeId(event.target.value)}
-              value={assigneeId}
+              className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-3 py-2.5 text-sm font-bold normal-case outline-none focus:border-emerald-700"
+              onChange={(event) =>
+                setFilterStatus(event.target.value as TaskStatus | '')
+              }
+              value={filterStatus}
             >
-              <option value="">Unassigned</option>
+              <option value="">All statuses</option>
+              {taskStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {readable(status)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
+            Filter priority
+            <select
+              className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-3 py-2.5 text-sm font-bold normal-case outline-none focus:border-emerald-700"
+              onChange={(event) =>
+                setFilterPriority(event.target.value as TaskPriority | '')
+              }
+              value={filterPriority}
+            >
+              <option value="">All priorities</option>
+              {taskPriorities.map((item) => (
+                <option key={item} value={item}>
+                  {readable(item)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
+            Filter type
+            <select
+              className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-3 py-2.5 text-sm font-bold normal-case outline-none focus:border-emerald-700"
+              onChange={(event) =>
+                setFilterType(event.target.value as TaskType | '')
+              }
+              value={filterType}
+            >
+              <option value="">All types</option>
+              {taskTypes.map((item) => (
+                <option key={item} value={item}>
+                  {readable(item)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
+            Filter assignee
+            <select
+              className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-3 py-2.5 text-sm font-bold normal-case outline-none focus:border-emerald-700"
+              onChange={(event) => setFilterAssignee(event.target.value)}
+              value={filterAssignee}
+            >
+              <option value="">All assignees</option>
               {members.map((member) => (
                 <option key={member.userId} value={member.userId}>
                   {member.name}
@@ -568,15 +507,128 @@ export function TaskWorkspace({
               ))}
             </select>
           </label>
-        ) : null}
-        <button
-          className="rounded-xl bg-emerald-900 px-5 py-3 text-sm font-black text-white disabled:opacity-60 sm:col-span-2"
-          disabled={working}
-          type="submit"
+          <label className="text-xs font-black tracking-wide text-emerald-900 uppercase xl:col-span-2">
+            Filter label
+            <input
+              className="mt-2 w-full rounded-xl border border-emerald-950/10 px-3 py-2.5 text-sm font-medium normal-case outline-none focus:border-emerald-700"
+              maxLength={50}
+              onChange={(event) => setFilterLabel(event.target.value)}
+              placeholder="e.g. backend"
+              value={filterLabel}
+            />
+          </label>
+          <div className="flex items-end gap-2 sm:col-span-2 xl:col-span-4">
+            <button
+              className="rounded-xl bg-emerald-900 px-5 py-2.5 text-sm font-black text-white"
+              type="submit"
+            >
+              Apply filters
+            </button>
+            <button
+              className="rounded-xl px-4 py-2.5 text-sm font-black text-emerald-800 hover:bg-emerald-50"
+              onClick={handleClearFilters}
+              type="button"
+            >
+              Clear
+            </button>
+          </div>
+        </form>
+      ) : null}
+
+      {showCreate ? (
+        <form
+          aria-label="Create task"
+          className="mb-6 grid gap-4 rounded-2xl border border-lime-300/60 bg-lime-50/70 p-5 sm:grid-cols-2 xl:grid-cols-4"
+          onSubmit={(event) => void handleCreate(event)}
         >
-          Create task
-        </button>
-      </form>
+          <div className="sm:col-span-2 xl:col-span-4">
+            <h4 className="text-lg font-black">Create a task</h4>
+            <p className="mt-1 text-sm text-emerald-950/50">
+              New tasks start in Backlog and can be moved when they are ready.
+            </p>
+          </div>
+          <label className="text-xs font-black tracking-wide text-emerald-900 uppercase sm:col-span-2 xl:col-span-2">
+            Task title
+            <input
+              className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-4 py-3 text-sm font-medium normal-case outline-none focus:border-emerald-700"
+              maxLength={200}
+              minLength={2}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="What needs to be done?"
+              required
+              value={title}
+            />
+          </label>
+          <label className="text-xs font-black tracking-wide text-emerald-900 uppercase sm:col-span-2 xl:col-span-2">
+            Task description
+            <textarea
+              className="mt-2 min-h-20 w-full resize-y rounded-xl border border-emerald-950/10 bg-white px-4 py-3 text-sm font-medium normal-case outline-none focus:border-emerald-700"
+              maxLength={10000}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Add useful context"
+              value={description}
+            />
+          </label>
+          <TaskSelect<TaskType>
+            label="Type"
+            onChange={setType}
+            options={taskTypes}
+            value={type}
+          />
+          <TaskSelect<TaskPriority>
+            label="Priority"
+            onChange={setPriority}
+            options={taskPriorities}
+            value={priority}
+          />
+          <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
+            Due date
+            <input
+              className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-4 py-3 text-sm font-medium normal-case outline-none focus:border-emerald-700"
+              onChange={(event) => setDueDate(event.target.value)}
+              type="date"
+              value={dueDate}
+            />
+          </label>
+          <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
+            Labels
+            <input
+              className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-4 py-3 text-sm font-medium normal-case outline-none focus:border-emerald-700"
+              onChange={(event) => setLabels(event.target.value)}
+              placeholder="backend, api"
+              value={labels}
+            />
+          </label>
+          {isAdmin ? (
+            <label className="text-xs font-black tracking-wide text-emerald-900 uppercase sm:col-span-2 xl:col-span-3">
+              Assignee
+              <select
+                className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-4 py-3 text-sm font-bold normal-case outline-none focus:border-emerald-700"
+                onChange={(event) => setAssigneeId(event.target.value)}
+                value={assigneeId}
+              >
+                <option value="">Unassigned</option>
+                {members.map((member) => (
+                  <option key={member.userId} value={member.userId}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <button
+            className={`rounded-xl bg-emerald-900 px-5 py-3 text-sm font-black text-white disabled:opacity-60 ${
+              isAdmin
+                ? 'sm:col-span-2 xl:col-span-1'
+                : 'sm:col-span-2 xl:col-span-4'
+            }`}
+            disabled={working}
+            type="submit"
+          >
+            Create task
+          </button>
+        </form>
+      ) : null}
 
       <div
         className={
@@ -635,12 +687,12 @@ export function TaskWorkspace({
           </ul>
         )}
 
-        {selectedTask === null ? (
+        {selectedTask === null && view === 'LIST' ? (
           <div className="grid min-h-40 place-items-center rounded-2xl bg-emerald-950/[0.025] p-5 text-center text-sm text-emerald-950/45">
             Select a task to view and update it.
           </div>
-        ) : (
-          <article className="rounded-2xl border border-emerald-950/10 p-4">
+        ) : selectedTask === null ? null : (
+          <article className="rounded-2xl border border-emerald-950/10 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-black text-emerald-700">

@@ -76,6 +76,7 @@ describe('TaskWorkspace filters', () => {
         name: 'TASK-100 Implement payment API',
       }),
     ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
     await user.type(screen.getByLabelText('Search tasks'), 'payment');
     await user.selectOptions(
       screen.getByLabelText('Filter status'),

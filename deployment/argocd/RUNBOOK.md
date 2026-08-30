@@ -23,6 +23,37 @@ deployment/helm/tarzan                    environments/production/
 
 The separate GitOps repository is intentional. Jenkins can update an image tag without creating another application-build webhook loop, and deployment history remains a small, readable list of environment changes.
 
+### Current repository plan: GitHub now, GitLab later
+
+The Tarzan application repository is currently hosted on GitHub. The checked-in Argo CD manifests intentionally keep example GitLab URLs because GitLab will become the final CI/CD source later. There is no need to change those placeholders until Argo CD is actually being configured.
+
+When the GitLab deployment stage begins, maintain two GitLab repositories:
+
+```text
+tarzan          application source, Dockerfiles, Helm chart, and Jenkinsfile
+tarzan-gitops   environment values consumed by Argo CD
+```
+
+The GitOps repository needs only this deployment file initially:
+
+```text
+tarzan-gitops/
+  environments/
+    production/
+      tarzan-values.yaml
+```
+
+Create it by copying `deployment/argocd/gitops-values.example.yaml`. If Argo CD is needed while the application remains on GitHub, the same two-repository model can be used on GitHub; Argo CD can also read the chart from GitHub and values from GitLab. The two repositories do not have to use the same Git provider.
+
+After the repositories are available in GitLab, update:
+
+1. `application.yaml`: both `repoURL` fields and both `targetRevision` branches.
+2. `app-project.yaml`: both entries under `sourceRepos`.
+3. the root `Jenkinsfile`: `APPLICATION_REPOSITORY`, `GITOPS_REPOSITORY`, `DEPLOY_BRANCH`, and `GITOPS_BRANCH`.
+4. Jenkins checkout/deploy credentials and Argo CD read-only repository credentials.
+
+Use the real default branch name, such as `main`, consistently. Do not copy GitHub or GitLab access tokens into these files.
+
 ## 2. Files in this directory
 
 - `app-project.yaml`: limits the repositories and cluster destination the Application may use.
@@ -36,7 +67,7 @@ The manifests contain placeholder GitLab, Harbor, DNS, and StorageClass values. 
 - A Linux Kubernetes cluster with an Ingress controller and CSI StorageClass
 - Argo CD installed in namespace `argocd`
 - `kubectl`, `argocd`, `git`, and `helm` on the administration machine
-- SSH deploy keys that can read both GitLab repositories
+- SSH deploy keys that can read both source repositories on GitHub or GitLab
 - Tarzan API and web images already present in Harbor
 
 ```bash
@@ -47,7 +78,7 @@ helm version
 
 ## 4. Bootstrap the GitOps repository
 
-Create a separate GitLab repository such as `platform/tarzan-gitops`, then on Linux:
+When GitLab is ready, create a separate repository such as `platform/tarzan-gitops`, then on Linux:
 
 ```bash
 git clone ssh://git@gitlab.example.com/platform/tarzan-gitops.git

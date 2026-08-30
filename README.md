@@ -1,6 +1,6 @@
 # Tarzan
 
-Tarzan is a simple, fast team work-management platform. This repository currently implements **M0 (Foundation)** through **M6 (Collaboration)** from the product specification in `docs/`.
+Tarzan is a simple, fast team work-management platform. This repository currently implements **M0 (Foundation)** through **M7 (Search & Filters)** from the product specification in `docs/`.
 
 ## What is included
 
@@ -16,10 +16,11 @@ Tarzan is a simple, fast team work-management platform. This repository currentl
 - Task CRUD with generated keys, assignment, fixed workflow status, type, priority, due dates, and labels
 - Six-column Kanban board with drag-and-drop status persistence and a list-view fallback
 - Team-scoped task comments and structured activity history
+- Server-side task search with status, priority, type, assignee, and label filters
 - Docker Compose services for PostgreSQL, the API, and the web app
 - ESLint, Prettier, Vitest, type checking, and production builds
 
-Search, filters, and later product milestones have not been implemented yet.
+MVP hardening and seed data remain for the final milestone.
 
 ## Prerequisites
 
@@ -125,7 +126,7 @@ Pass `teamId` as an optional query parameter to filter the project list. Every t
 | `PATCH`  | `/api/tasks/:id/status`   | Move a permitted task through the workflow |
 | `PATCH`  | `/api/tasks/:id/assignee` | Assign a team member as a team admin       |
 
-Pass `projectId` as an optional query parameter to scope the task list. Task keys are generated atomically by PostgreSQL in the `TASK-100` format. All team members can create tasks. Team admins can update, assign, move, and delete any team task; regular members can update or move tasks they reported or are assigned to. Only members of the owning team can be assigned.
+Pass `projectId` as an optional query parameter to scope the task list. The same endpoint accepts `search`, `status`, `priority`, `type`, `assigneeId`, and `label`; search matches task keys and titles without case sensitivity, and filters can be combined. Task keys are generated atomically by PostgreSQL in the `TASK-100` format. All team members can create tasks. Team admins can update, assign, move, and delete any team task; regular members can update or move tasks they reported or are assigned to. Only members of the owning team can be assigned.
 
 The project workspace opens in Kanban view with Backlog, Todo, In Progress, Blocked, In Review, and Done columns. Permitted users can drag task cards between columns, and each drop persists through the task status endpoint. The existing list and task-detail views remain available from the same workspace.
 

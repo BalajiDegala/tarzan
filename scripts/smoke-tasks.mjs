@@ -194,6 +194,30 @@ const memberList = await requestJson(`/tasks?projectId=${project.id}`, {
 report('MEMBER_LIST_STATUS', memberList.response.status, 200);
 report('MEMBER_LIST_COUNT', memberList.body.tasks.length, 2);
 
+for (const [label, query, expectedTaskId] of [
+  [
+    'SEARCH_BY_KEY',
+    `search=${encodeURIComponent(memberTask.taskKey)}`,
+    memberTask.id,
+  ],
+  [
+    'SEARCH_BY_TITLE',
+    `search=${encodeURIComponent(`payment API ${runId}`)}`,
+    memberTask.id,
+  ],
+  ['FILTER_STATUS', 'status=DONE', memberTask.id],
+  ['FILTER_PRIORITY', 'priority=HIGH', memberTask.id],
+  ['FILTER_TYPE', 'type=STORY', memberTask.id],
+  ['FILTER_ASSIGNEE', `assigneeId=${member.user.id}`, adminTask.id],
+  ['FILTER_LABEL', 'label=backend', memberTask.id],
+]) {
+  const filterResult = await requestJson(
+    `/tasks?projectId=${project.id}&${query}`,
+    { headers: { Cookie: member.cookie } },
+  );
+  report(label, filterResult.body.tasks[0]?.id, expectedTaskId);
+}
+
 const outsiderDetail = await request(`/tasks/${memberTask.id}`, {
   headers: { Cookie: outsider.cookie },
 });

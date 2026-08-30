@@ -18,6 +18,7 @@ import { TaskPriority, TaskStatus, TaskType, TeamRole } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateTaskDto } from './dto/create-task.dto';
+import type { ListTasksQueryDto } from './dto/list-tasks-query.dto';
 import type { UpdateTaskAssigneeDto } from './dto/update-task-assignee.dto';
 import type { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 import type { UpdateTaskDto } from './dto/update-task.dto';
@@ -93,12 +94,42 @@ export class TasksService {
     return this.getById(userId, task.id);
   }
 
-  async list(userId: string, projectId?: string): Promise<TaskListResponse> {
+  async list(
+    userId: string,
+    query: ListTasksQueryDto,
+  ): Promise<TaskListResponse> {
     const tasks = await this.prisma.task.findMany({
       include: this.visibleTaskInclude(userId),
       orderBy: { updatedAt: 'desc' },
       where: {
-        ...(projectId === undefined ? {} : { projectId }),
+        ...(query.projectId === undefined
+          ? {}
+          : { projectId: query.projectId }),
+        ...(query.status === undefined ? {} : { status: query.status }),
+        ...(query.priority === undefined ? {} : { priority: query.priority }),
+        ...(query.type === undefined ? {} : { type: query.type }),
+        ...(query.assigneeId === undefined
+          ? {}
+          : { assigneeId: query.assigneeId }),
+        ...(query.label === undefined ? {} : { labels: { has: query.label } }),
+        ...(query.search === undefined
+          ? {}
+          : {
+              OR: [
+                {
+                  taskKey: {
+                    contains: query.search,
+                    mode: 'insensitive' as const,
+                  },
+                },
+                {
+                  title: {
+                    contains: query.search,
+                    mode: 'insensitive' as const,
+                  },
+                },
+              ],
+            }),
         project: { team: { members: { some: { userId } } } },
       },
     });

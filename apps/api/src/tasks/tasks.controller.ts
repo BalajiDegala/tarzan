@@ -17,6 +17,7 @@ import {
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { ListTasksQueryDto } from './dto/list-tasks-query.dto';
 import { UpdateTaskAssigneeDto } from './dto/update-task-assignee.dto';
 import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -38,10 +39,9 @@ export class TasksController {
   @Get()
   list(
     @CurrentUser() user: AuthUser,
-    @Query('projectId', new ParseUUIDPipe({ optional: true }))
-    projectId?: string,
+    @Query() query: ListTasksQueryDto,
   ): Promise<TaskListResponse> {
-    return this.tasksService.list(user.id, projectId);
+    return this.tasksService.list(user.id, query);
   }
 
   @Get(':id')

@@ -10,6 +10,7 @@ import type {
   TeamResponse,
   TeamRole,
   TaskListResponse,
+  TaskFilters,
   TaskPriority,
   TaskResponse,
   TaskStatus,
@@ -145,14 +146,16 @@ export const tasksApi = {
     }),
   get: (taskId: string) =>
     request<TaskResponse>(`/tasks/${encodeURIComponent(taskId)}`),
-  list: (projectId?: string) =>
-    request<TaskListResponse>(
-      `/tasks${
-        projectId === undefined
-          ? ''
-          : `?projectId=${encodeURIComponent(projectId)}`
-      }`,
-    ),
+  list: (filters: TaskFilters = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value.length > 0) query.set(key, value);
+    });
+    const queryString = query.toString();
+    return request<TaskListResponse>(
+      `/tasks${queryString.length === 0 ? '' : `?${queryString}`}`,
+    );
+  },
   remove: (taskId: string) =>
     request<void>(`/tasks/${encodeURIComponent(taskId)}`, {
       method: 'DELETE',

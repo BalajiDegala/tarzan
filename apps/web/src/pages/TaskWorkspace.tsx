@@ -1,6 +1,7 @@
 import type {
   ProjectDetails,
   TaskDetails,
+  TaskFilters,
   TaskPriority,
   TaskStatus,
   TaskSummary,
@@ -73,6 +74,13 @@ export function TaskWorkspace({
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'BOARD' | 'LIST'>('BOARD');
   const [collaborationVersion, setCollaborationVersion] = useState(0);
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState<TaskStatus | ''>('');
+  const [filterPriority, setFilterPriority] = useState<TaskPriority | ''>('');
+  const [filterType, setFilterType] = useState<TaskType | ''>('');
+  const [filterAssignee, setFilterAssignee] = useState('');
+  const [filterLabel, setFilterLabel] = useState('');
+  const [appliedFilters, setAppliedFilters] = useState<TaskFilters>({});
 
   const isAdmin = project.teamRole === 'ADMIN';
 
@@ -80,7 +88,7 @@ export function TaskWorkspace({
     let active = true;
 
     void tasksApi
-      .list(project.id)
+      .list({ projectId: project.id, ...appliedFilters })
       .then(({ tasks: projectTasks }) => {
         if (active) {
           setTasks(projectTasks);
@@ -104,7 +112,29 @@ export function TaskWorkspace({
     return () => {
       active = false;
     };
-  }, [project.id]);
+  }, [appliedFilters, project.id]);
+
+  function handleApplyFilters(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAppliedFilters({
+      ...(filterAssignee.length === 0 ? {} : { assigneeId: filterAssignee }),
+      ...(filterLabel.trim().length === 0 ? {} : { label: filterLabel.trim() }),
+      ...(filterPriority === '' ? {} : { priority: filterPriority }),
+      ...(search.trim().length === 0 ? {} : { search: search.trim() }),
+      ...(filterStatus === '' ? {} : { status: filterStatus }),
+      ...(filterType === '' ? {} : { type: filterType }),
+    });
+  }
+
+  function handleClearFilters() {
+    setSearch('');
+    setFilterStatus('');
+    setFilterPriority('');
+    setFilterType('');
+    setFilterAssignee('');
+    setFilterLabel('');
+    setAppliedFilters({});
+  }
 
   function populateEditor(task: TaskDetails) {
     setEditTitle(task.title);
@@ -350,6 +380,114 @@ export function TaskWorkspace({
           {error}
         </p>
       )}
+
+      <form
+        aria-label="Task filters"
+        className="mb-5 grid gap-3 rounded-2xl border border-emerald-950/10 bg-white p-4 sm:grid-cols-2 xl:grid-cols-6"
+        onSubmit={handleApplyFilters}
+      >
+        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase xl:col-span-2">
+          Search tasks
+          <input
+            className="mt-2 w-full rounded-xl border border-emerald-950/10 px-3 py-2.5 text-sm font-medium normal-case outline-none focus:border-emerald-700"
+            maxLength={200}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Task key or title"
+            value={search}
+          />
+        </label>
+        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
+          Filter status
+          <select
+            className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-3 py-2.5 text-sm font-bold normal-case outline-none focus:border-emerald-700"
+            onChange={(event) =>
+              setFilterStatus(event.target.value as TaskStatus | '')
+            }
+            value={filterStatus}
+          >
+            <option value="">All statuses</option>
+            {taskStatuses.map((status) => (
+              <option key={status} value={status}>
+                {readable(status)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
+          Filter priority
+          <select
+            className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-3 py-2.5 text-sm font-bold normal-case outline-none focus:border-emerald-700"
+            onChange={(event) =>
+              setFilterPriority(event.target.value as TaskPriority | '')
+            }
+            value={filterPriority}
+          >
+            <option value="">All priorities</option>
+            {taskPriorities.map((item) => (
+              <option key={item} value={item}>
+                {readable(item)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
+          Filter type
+          <select
+            className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-3 py-2.5 text-sm font-bold normal-case outline-none focus:border-emerald-700"
+            onChange={(event) =>
+              setFilterType(event.target.value as TaskType | '')
+            }
+            value={filterType}
+          >
+            <option value="">All types</option>
+            {taskTypes.map((item) => (
+              <option key={item} value={item}>
+                {readable(item)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase">
+          Filter assignee
+          <select
+            className="mt-2 w-full rounded-xl border border-emerald-950/10 bg-white px-3 py-2.5 text-sm font-bold normal-case outline-none focus:border-emerald-700"
+            onChange={(event) => setFilterAssignee(event.target.value)}
+            value={filterAssignee}
+          >
+            <option value="">All assignees</option>
+            {members.map((member) => (
+              <option key={member.userId} value={member.userId}>
+                {member.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs font-black tracking-wide text-emerald-900 uppercase xl:col-span-2">
+          Filter label
+          <input
+            className="mt-2 w-full rounded-xl border border-emerald-950/10 px-3 py-2.5 text-sm font-medium normal-case outline-none focus:border-emerald-700"
+            maxLength={50}
+            onChange={(event) => setFilterLabel(event.target.value)}
+            placeholder="e.g. backend"
+            value={filterLabel}
+          />
+        </label>
+        <div className="flex items-end gap-2 sm:col-span-2 xl:col-span-4">
+          <button
+            className="rounded-xl bg-emerald-900 px-5 py-2.5 text-sm font-black text-white"
+            type="submit"
+          >
+            Apply filters
+          </button>
+          <button
+            className="rounded-xl px-4 py-2.5 text-sm font-black text-emerald-800 hover:bg-emerald-50"
+            onClick={handleClearFilters}
+            type="button"
+          >
+            Clear
+          </button>
+        </div>
+      </form>
 
       <form
         className="mb-6 grid gap-3 rounded-2xl bg-emerald-950/[0.035] p-4 sm:grid-cols-2"

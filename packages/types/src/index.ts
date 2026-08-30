@@ -119,6 +119,16 @@ export interface TaskListResponse {
   tasks: TaskSummary[];
 }
 
+export interface TaskFilters {
+  assigneeId?: string;
+  label?: string;
+  priority?: TaskPriority;
+  projectId?: string;
+  search?: string;
+  status?: TaskStatus;
+  type?: TaskType;
+}
+
 export interface TaskResponse {
   task: TaskDetails;
 }

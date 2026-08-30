@@ -148,7 +148,7 @@ describe('TasksService', () => {
   it('lists only tasks in projects visible to the current user', async () => {
     taskFindMany.mockResolvedValue([visibleTask(TeamRole.MEMBER)]);
 
-    const result = await service.list(memberId, projectId);
+    const result = await service.list(memberId, { projectId });
 
     expect(taskFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -160,6 +160,37 @@ describe('TasksService', () => {
     );
     expect(result.tasks[0]).toEqual(
       expect.objectContaining({ taskKey: 'TASK-100', teamRole: 'MEMBER' }),
+    );
+  });
+
+  it('combines task search with status, priority, type, assignee, and label filters', async () => {
+    taskFindMany.mockResolvedValue([visibleTask(TeamRole.MEMBER)]);
+
+    await service.list(memberId, {
+      assigneeId: memberId,
+      label: 'backend',
+      priority: TaskPriority.HIGH,
+      projectId,
+      search: 'payment',
+      status: TaskStatus.BACKLOG,
+      type: TaskType.TASK,
+    });
+
+    expect(taskFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: [
+            { taskKey: { contains: 'payment', mode: 'insensitive' } },
+            { title: { contains: 'payment', mode: 'insensitive' } },
+          ],
+          assigneeId: memberId,
+          labels: { has: 'backend' },
+          priority: TaskPriority.HIGH,
+          projectId,
+          status: TaskStatus.BACKLOG,
+          type: TaskType.TASK,
+        }),
+      }),
     );
   });
 
